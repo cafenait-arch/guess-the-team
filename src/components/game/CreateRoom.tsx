@@ -1,0 +1,123 @@
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { supabase } from '@/integrations/supabase/client';
+import { generateRoomCode } from '@/lib/gameUtils';
+import { useToast } from '@/hooks/use-toast';
+
+interface CreateRoomProps {
+  sessionId: string;
+  onRoomCreated: (roomId: string, playerId: string) => void;
+}
+
+export const CreateRoom = ({ sessionId, onRoomCreated }: CreateRoomProps) => {
+  const [playerName, setPlayerName] = useState('');
+  const [maxGuesses, setMaxGuesses] = useState(3);
+  const [maxQuestions, setMaxQuestions] = useState(30);
+  const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
+
+  const handleCreate = async () => {
+    if (!playerName.trim()) {
+      toast({ title: 'Digite seu nome', variant: 'destructive' });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const code = generateRoomCode();
+      
+      // Create room
+      const { data: room, error: roomError } = await supabase
+        .from('game_rooms')
+        .insert({
+          code,
+          host_id: sessionId,
+          max_guesses: maxGuesses,
+          max_questions: maxQuestions,
+        })
+        .select()
+        .single();
+
+      if (roomError) throw roomError;
+
+      // Create player
+      const { data: player, error: playerError } = await supabase
+        .from('game_players')
+        .insert({
+          room_id: room.id,
+          name: playerName.trim(),
+          session_id: sessionId,
+          guesses_left: maxGuesses,
+          questions_left: maxQuestions,
+          player_order: 0,
+          is_host: true,
+        })
+        .select()
+        .single();
+
+      if (playerError) throw playerError;
+
+      onRoomCreated(room.id, player.id);
+    } catch (error) {
+      console.error('Error creating room:', error);
+      toast({ title: 'Erro ao criar sala', variant: 'destructive' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Card className="w-full max-w-md">
+      <CardHeader>
+        <CardTitle className="text-center">Criar Sala</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="name">Seu Nome</Label>
+          <Input
+            id="name"
+            value={playerName}
+            onChange={(e) => setPlayerName(e.target.value)}
+            placeholder="Digite seu nome"
+            maxLength={50}
+          />
+        </div>
+        
+        <div className="space-y-2">
+          <Label htmlFor="guesses">Máximo de Chutes por Pessoa</Label>
+          <Input
+            id="guesses"
+            type="number"
+            min={1}
+            max={10}
+            value={maxGuesses}
+            onChange={(e) => setMaxGuesses(Number(e.target.value))}
+          />
+        </div>
+        
+        <div className="space-y-2">
+          <Label htmlFor="questions">Máximo de Perguntas por Pessoa</Label>
+          <Input
+            id="questions"
+            type="number"
+            min={1}
+            max={50}
+            value={maxQuestions}
+            onChange={(e) => setMaxQuestions(Number(e.target.value))}
+          />
+        </div>
+
+        <Button 
+          className="w-full" 
+          onClick={handleCreate}
+          disabled={loading}
+        >
+          {loading ? 'Criando...' : 'Criar Sala'}
+        </Button>
+      </CardContent>
+    </Card>
+  );
+};
