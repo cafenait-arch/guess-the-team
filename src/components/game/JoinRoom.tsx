@@ -29,7 +29,6 @@ export const JoinRoom = ({ sessionId, onRoomJoined }: JoinRoomProps) => {
 
     setLoading(true);
     try {
-      // Find room
       const { data: room, error: roomError } = await supabase
         .from('game_rooms')
         .select('*')
@@ -47,19 +46,13 @@ export const JoinRoom = ({ sessionId, onRoomJoined }: JoinRoomProps) => {
         return;
       }
 
-      // Check player count
       const { data: players, error: countError } = await supabase
         .from('game_players')
         .select('id')
         .eq('room_id', room.id);
 
       if (countError) throw countError;
-      if (players && players.length >= 4) {
-        toast({ title: 'Sala cheia (máx 4 jogadores)', variant: 'destructive' });
-        return;
-      }
 
-      // Check if already in room
       const existingPlayer = await supabase
         .from('game_players')
         .select('id')
@@ -72,7 +65,6 @@ export const JoinRoom = ({ sessionId, onRoomJoined }: JoinRoomProps) => {
         return;
       }
 
-      // Create player
       const { data: player, error: playerError } = await supabase
         .from('game_players')
         .insert({
@@ -99,9 +91,9 @@ export const JoinRoom = ({ sessionId, onRoomJoined }: JoinRoomProps) => {
   };
 
   return (
-    <Card className="w-full max-w-md">
-      <CardHeader>
-        <CardTitle className="text-center">Entrar em Sala</CardTitle>
+    <Card className="w-full">
+      <CardHeader className="pb-4">
+        <CardTitle className="text-center text-lg sm:text-xl">Entrar em Sala</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">

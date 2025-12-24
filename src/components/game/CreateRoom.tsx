@@ -16,6 +16,7 @@ export const CreateRoom = ({ sessionId, onRoomCreated }: CreateRoomProps) => {
   const [playerName, setPlayerName] = useState('');
   const [maxGuesses, setMaxGuesses] = useState(3);
   const [maxQuestions, setMaxQuestions] = useState(30);
+  const [maxRounds, setMaxRounds] = useState(1);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
@@ -37,6 +38,7 @@ export const CreateRoom = ({ sessionId, onRoomCreated }: CreateRoomProps) => {
           host_id: sessionId,
           max_guesses: maxGuesses,
           max_questions: maxQuestions,
+          max_rounds: maxRounds,
         })
         .select()
         .single();
@@ -70,9 +72,9 @@ export const CreateRoom = ({ sessionId, onRoomCreated }: CreateRoomProps) => {
   };
 
   return (
-    <Card className="w-full max-w-md">
-      <CardHeader>
-        <CardTitle className="text-center">Criar Sala</CardTitle>
+    <Card className="w-full">
+      <CardHeader className="pb-4">
+        <CardTitle className="text-center text-lg sm:text-xl">Criar Sala</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
@@ -86,28 +88,45 @@ export const CreateRoom = ({ sessionId, onRoomCreated }: CreateRoomProps) => {
           />
         </div>
         
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-2">
+            <Label htmlFor="guesses" className="text-sm">Chutes por Pessoa</Label>
+            <Input
+              id="guesses"
+              type="number"
+              min={1}
+              max={10}
+              value={maxGuesses}
+              onChange={(e) => setMaxGuesses(Number(e.target.value))}
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="questions" className="text-sm">Perguntas por Pessoa</Label>
+            <Input
+              id="questions"
+              type="number"
+              min={1}
+              max={50}
+              value={maxQuestions}
+              onChange={(e) => setMaxQuestions(Number(e.target.value))}
+            />
+          </div>
+        </div>
+
         <div className="space-y-2">
-          <Label htmlFor="guesses">Máximo de Chutes por Pessoa</Label>
+          <Label htmlFor="rounds">Número de Rodadas</Label>
           <Input
-            id="guesses"
+            id="rounds"
             type="number"
             min={1}
             max={10}
-            value={maxGuesses}
-            onChange={(e) => setMaxGuesses(Number(e.target.value))}
+            value={maxRounds}
+            onChange={(e) => setMaxRounds(Number(e.target.value))}
           />
-        </div>
-        
-        <div className="space-y-2">
-          <Label htmlFor="questions">Máximo de Perguntas por Pessoa</Label>
-          <Input
-            id="questions"
-            type="number"
-            min={1}
-            max={50}
-            value={maxQuestions}
-            onChange={(e) => setMaxQuestions(Number(e.target.value))}
-          />
+          <p className="text-xs text-muted-foreground">
+            1 rodada = cada jogador escolhe um time uma vez
+          </p>
         </div>
 
         <Button 

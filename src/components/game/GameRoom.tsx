@@ -6,6 +6,7 @@ import { ChoosingPhase } from './ChoosingPhase';
 import { PlayingPhase } from './PlayingPhase';
 import { RoundEnd } from './RoundEnd';
 import { GameOver } from './GameOver';
+import { GameChat } from './GameChat';
 
 interface GameRoomProps {
   roomId: string;
@@ -71,11 +72,24 @@ export const GameRoom = ({ roomId, playerId, sessionId, onLeave }: GameRoomProps
   };
 
   if (!room || !currentPlayer) {
-    return <div className="text-center">Carregando...</div>;
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="animate-spin text-4xl">⚽</div>
+      </div>
+    );
   }
 
+  const showChat = room.status !== 'waiting' && room.status !== 'game_over';
+
   return (
-    <div className="flex flex-col items-center">
+    <div className="flex flex-col items-center relative">
+      {/* Chat button - fixed position on mobile */}
+      {showChat && (
+        <div className="fixed bottom-4 right-4 z-50 sm:absolute sm:bottom-auto sm:top-0 sm:right-0">
+          <GameChat roomId={roomId} playerId={playerId} players={players} />
+        </div>
+      )}
+
       {room.status === 'waiting' && (
         <Lobby roomId={roomId} playerId={playerId} sessionId={sessionId} />
       )}
