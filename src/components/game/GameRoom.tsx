@@ -23,8 +23,9 @@ export const GameRoom = ({ roomId, playerId, sessionId, onLeave }: GameRoomProps
   useEffect(() => {
     fetchData();
 
+    // Use unique channel names to avoid conflicts
     const roomChannel = supabase
-      .channel('game-room-updates')
+      .channel(`gameroom-room-${roomId}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'game_rooms', filter: `id=eq.${roomId}` },
@@ -33,7 +34,7 @@ export const GameRoom = ({ roomId, playerId, sessionId, onLeave }: GameRoomProps
       .subscribe();
 
     const playerChannel = supabase
-      .channel('game-player-updates')
+      .channel(`gameroom-players-${roomId}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'game_players', filter: `room_id=eq.${roomId}` },
@@ -41,7 +42,11 @@ export const GameRoom = ({ roomId, playerId, sessionId, onLeave }: GameRoomProps
       )
       .subscribe();
 
+    // Polling fallback for reliability
+    const pollInterval = setInterval(fetchData, 3000);
+
     return () => {
+      clearInterval(pollInterval);
       supabase.removeChannel(roomChannel);
       supabase.removeChannel(playerChannel);
     };

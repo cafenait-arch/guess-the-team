@@ -22,8 +22,9 @@ export const Lobby = ({ roomId, playerId, sessionId }: LobbyProps) => {
   useEffect(() => {
     fetchRoomData();
     
+    // Use unique channel names to avoid conflicts
     const roomChannel = supabase
-      .channel('room-changes')
+      .channel(`lobby-room-${roomId}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'game_rooms', filter: `id=eq.${roomId}` },
@@ -32,7 +33,7 @@ export const Lobby = ({ roomId, playerId, sessionId }: LobbyProps) => {
       .subscribe();
 
     const playerChannel = supabase
-      .channel('player-changes')
+      .channel(`lobby-players-${roomId}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'game_players', filter: `room_id=eq.${roomId}` },
@@ -40,7 +41,11 @@ export const Lobby = ({ roomId, playerId, sessionId }: LobbyProps) => {
       )
       .subscribe();
 
+    // Polling fallback for reliability
+    const pollInterval = setInterval(fetchRoomData, 3000);
+
     return () => {
+      clearInterval(pollInterval);
       supabase.removeChannel(roomChannel);
       supabase.removeChannel(playerChannel);
     };
