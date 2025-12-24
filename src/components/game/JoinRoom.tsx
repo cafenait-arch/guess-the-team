@@ -28,11 +28,12 @@ export const JoinRoom = ({ sessionId, onRoomJoined }: JoinRoomProps) => {
     }
 
     setLoading(true);
+    const cleanCode = roomCode.trim().toUpperCase();
     try {
       const { data: room, error: roomError } = await supabase
         .from('game_rooms')
         .select('*')
-        .eq('code', roomCode.toUpperCase())
+        .eq('code', cleanCode)
         .maybeSingle();
 
       if (roomError) throw roomError;
