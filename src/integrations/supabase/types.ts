@@ -14,7 +14,188 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      game_players: {
+        Row: {
+          created_at: string
+          guesses_left: number
+          id: string
+          is_host: boolean
+          name: string
+          player_order: number
+          questions_left: number
+          room_id: string
+          score: number
+          session_id: string
+        }
+        Insert: {
+          created_at?: string
+          guesses_left?: number
+          id?: string
+          is_host?: boolean
+          name: string
+          player_order?: number
+          questions_left?: number
+          room_id: string
+          score?: number
+          session_id: string
+        }
+        Update: {
+          created_at?: string
+          guesses_left?: number
+          id?: string
+          is_host?: boolean
+          name?: string
+          player_order?: number
+          questions_left?: number
+          room_id?: string
+          score?: number
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_players_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "game_rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      game_questions: {
+        Row: {
+          answer: string | null
+          created_at: string
+          id: string
+          is_correct: boolean | null
+          is_guess: boolean
+          player_id: string
+          question: string
+          room_id: string
+          round: number
+        }
+        Insert: {
+          answer?: string | null
+          created_at?: string
+          id?: string
+          is_correct?: boolean | null
+          is_guess?: boolean
+          player_id: string
+          question: string
+          room_id: string
+          round: number
+        }
+        Update: {
+          answer?: string | null
+          created_at?: string
+          id?: string
+          is_correct?: boolean | null
+          is_guess?: boolean
+          player_id?: string
+          question?: string
+          room_id?: string
+          round?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_questions_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "game_players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "game_questions_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "game_rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      game_rooms: {
+        Row: {
+          code: string
+          created_at: string
+          current_chooser_index: number
+          current_round: number
+          current_team: string | null
+          current_turn_index: number
+          host_id: string
+          id: string
+          max_guesses: number
+          max_questions: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          current_chooser_index?: number
+          current_round?: number
+          current_team?: string | null
+          current_turn_index?: number
+          host_id: string
+          id?: string
+          max_guesses?: number
+          max_questions?: number
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          current_chooser_index?: number
+          current_round?: number
+          current_team?: string | null
+          current_turn_index?: number
+          host_id?: string
+          id?: string
+          max_guesses?: number
+          max_questions?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      game_scores: {
+        Row: {
+          created_at: string
+          final_score: number
+          id: string
+          player_id: string
+          room_id: string
+        }
+        Insert: {
+          created_at?: string
+          final_score?: number
+          id?: string
+          player_id: string
+          room_id: string
+        }
+        Update: {
+          created_at?: string
+          final_score?: number
+          id?: string
+          player_id?: string
+          room_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_scores_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "game_players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "game_scores_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "game_rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
