@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -43,9 +43,10 @@ export const ChoosingPhase = ({ room, players, currentPlayer }: ChoosingPhasePro
         }
       }
 
-      // Find first guesser (not the chooser)
+      // Find random first guesser (not the chooser)
       const guessers = players.filter(p => p.id !== chooser.id);
-      const firstGuesserIndex = players.findIndex(p => p.id === guessers[0]?.id);
+      const randomGuesser = guessers[Math.floor(Math.random() * guessers.length)];
+      const firstGuesserIndex = players.findIndex(p => p.id === randomGuesser?.id);
 
       await supabase
         .from('game_rooms')
@@ -65,15 +66,15 @@ export const ChoosingPhase = ({ room, players, currentPlayer }: ChoosingPhasePro
 
   return (
     <Card className="w-full max-w-lg">
-      <CardHeader>
-        <CardTitle className="text-center">
+      <CardHeader className="pb-4">
+        <CardTitle className="text-center text-lg sm:text-xl">
           Rodada {room.current_round}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
         {isChooser ? (
           <div className="space-y-4">
-            <p className="text-center text-lg">
+            <p className="text-center text-base sm:text-lg">
               É sua vez de escolher um time de futebol!
             </p>
             <div className="relative">
@@ -107,7 +108,7 @@ export const ChoosingPhase = ({ room, players, currentPlayer }: ChoosingPhasePro
           </div>
         ) : (
           <div className="text-center space-y-4">
-            <p className="text-lg">
+            <p className="text-base sm:text-lg">
               <span className="font-bold">{chooser?.name}</span> está escolhendo um time...
             </p>
             <div className="animate-pulse text-4xl">⚽</div>

@@ -22,7 +22,6 @@ export const Lobby = ({ roomId, playerId, sessionId }: LobbyProps) => {
   useEffect(() => {
     fetchRoomData();
     
-    // Subscribe to room changes
     const roomChannel = supabase
       .channel('room-changes')
       .on(
@@ -32,7 +31,6 @@ export const Lobby = ({ roomId, playerId, sessionId }: LobbyProps) => {
       )
       .subscribe();
 
-    // Subscribe to player changes
     const playerChannel = supabase
       .channel('player-changes')
       .on(
@@ -84,54 +82,66 @@ export const Lobby = ({ roomId, playerId, sessionId }: LobbyProps) => {
       return;
     }
 
+    // Select random first chooser
+    const randomChooserIndex = Math.floor(Math.random() * players.length);
+
     await supabase
       .from('game_rooms')
-      .update({ status: 'choosing', current_round: 1 })
+      .update({ 
+        status: 'choosing', 
+        current_round: 1,
+        current_chooser_index: randomChooserIndex
+      })
       .eq('id', roomId);
   };
 
-  if (!room) return <div className="text-center">Carregando...</div>;
+  if (!room) return (
+    <div className="flex items-center justify-center p-8">
+      <div className="animate-spin text-4xl">⚽</div>
+    </div>
+  );
 
   return (
     <Card className="w-full max-w-lg">
-      <CardHeader>
-        <CardTitle className="text-center flex items-center justify-center gap-2">
-          <Users className="w-6 h-6" />
+      <CardHeader className="pb-4">
+        <CardTitle className="text-center flex items-center justify-center gap-2 text-lg sm:text-xl">
+          <Users className="w-5 h-5 sm:w-6 sm:h-6" />
           Sala de Espera
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-4 sm:space-y-6">
         <div className="text-center">
-          <p className="text-muted-foreground mb-2">Código da Sala</p>
+          <p className="text-muted-foreground mb-2 text-sm">Código da Sala</p>
           <div className="flex items-center justify-center gap-2">
-            <span className="text-3xl font-bold tracking-wider">{room.code}</span>
+            <span className="text-2xl sm:text-3xl font-bold tracking-wider">{room.code}</span>
             <Button variant="ghost" size="icon" onClick={copyCode}>
-              <Copy className="w-5 h-5" />
+              <Copy className="w-4 h-4 sm:w-5 sm:h-5" />
             </Button>
           </div>
         </div>
 
         <div className="space-y-2">
           <p className="text-sm text-muted-foreground">
-            Jogadores ({players.length}/4)
+            Jogadores ({players.length})
           </p>
           <div className="space-y-2">
             {players.map((player) => (
               <div 
                 key={player.id} 
-                className="flex items-center justify-between p-3 bg-muted rounded-lg"
+                className="flex items-center justify-between p-2 sm:p-3 bg-muted rounded-lg"
               >
-                <span className="font-medium">{player.name}</span>
+                <span className="font-medium text-sm sm:text-base">{player.name}</span>
                 {player.is_host && (
-                  <Badge variant="secondary">Host</Badge>
+                  <Badge variant="secondary" className="text-xs">Host</Badge>
                 )}
               </div>
             ))}
           </div>
         </div>
 
-        <div className="text-sm text-muted-foreground text-center">
+        <div className="text-xs sm:text-sm text-muted-foreground text-center space-y-1">
           <p>Chutes: {room.max_guesses} | Perguntas: {room.max_questions}</p>
+          <p>Rodadas: {room.max_rounds}</p>
         </div>
 
         {isHost && (
@@ -145,7 +155,7 @@ export const Lobby = ({ roomId, playerId, sessionId }: LobbyProps) => {
         )}
 
         {!isHost && (
-          <p className="text-center text-muted-foreground">
+          <p className="text-center text-muted-foreground text-sm">
             Aguardando o host iniciar o jogo...
           </p>
         )}

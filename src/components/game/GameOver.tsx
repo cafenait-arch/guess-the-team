@@ -14,41 +14,41 @@ export const GameOver = ({ players, onPlayAgain }: GameOverProps) => {
 
   return (
     <Card className="w-full max-w-lg">
-      <CardHeader>
-        <CardTitle className="text-center flex items-center justify-center gap-2">
-          <Trophy className="w-8 h-8 text-yellow-500" />
+      <CardHeader className="pb-4">
+        <CardTitle className="text-center flex items-center justify-center gap-2 text-lg sm:text-xl">
+          <Trophy className="w-6 h-6 sm:w-8 sm:h-8 text-yellow-500" />
           Fim de Jogo!
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-4 sm:space-y-6">
         <div className="text-center">
-          <p className="text-lg text-muted-foreground">Vencedor</p>
-          <p className="text-3xl font-bold text-primary">{winner?.name}</p>
-          <p className="text-xl">{winner?.score} pontos</p>
+          <p className="text-base sm:text-lg text-muted-foreground">Vencedor</p>
+          <p className="text-2xl sm:text-3xl font-bold text-primary">{winner?.name}</p>
+          <p className="text-lg sm:text-xl">{winner?.score} pontos</p>
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-2 sm:space-y-3">
           {sortedPlayers.map((player, index) => (
             <div 
               key={player.id}
-              className={`flex items-center justify-between p-4 rounded-lg ${
+              className={`flex items-center justify-between p-3 sm:p-4 rounded-lg ${
                 index === 0 ? 'bg-yellow-100 dark:bg-yellow-900/30' :
                 index === 1 ? 'bg-gray-100 dark:bg-gray-800' :
                 index === 2 ? 'bg-orange-100 dark:bg-orange-900/30' :
                 'bg-muted'
               }`}
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 sm:gap-3">
                 {index < 3 && (
-                  <Medal className={`w-6 h-6 ${
+                  <Medal className={`w-5 h-5 sm:w-6 sm:h-6 ${
                     index === 0 ? 'text-yellow-500' :
                     index === 1 ? 'text-gray-400' :
                     'text-orange-500'
                   }`} />
                 )}
-                <span className="font-medium">{index + 1}º {player.name}</span>
+                <span className="font-medium text-sm sm:text-base">{index + 1}º {player.name}</span>
               </div>
-              <span className="font-bold">{player.score} pts</span>
+              <span className="font-bold text-sm sm:text-base">{player.score} pts</span>
             </div>
           ))}
         </div>

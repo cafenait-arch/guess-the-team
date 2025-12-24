@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      game_chat_messages: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          player_id: string
+          room_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message: string
+          player_id: string
+          room_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          player_id?: string
+          room_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_chat_messages_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "game_players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "game_chat_messages_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "game_rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       game_players: {
         Row: {
           created_at: string
@@ -124,6 +163,7 @@ export type Database = {
           id: string
           max_guesses: number
           max_questions: number
+          max_rounds: number
           status: string
           updated_at: string
         }
@@ -138,6 +178,7 @@ export type Database = {
           id?: string
           max_guesses?: number
           max_questions?: number
+          max_rounds?: number
           status?: string
           updated_at?: string
         }
@@ -152,6 +193,7 @@ export type Database = {
           id?: string
           max_guesses?: number
           max_questions?: number
+          max_rounds?: number
           status?: string
           updated_at?: string
         }
