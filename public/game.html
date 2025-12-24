@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Adivinhe o Time!</title>
+    <link rel="stylesheet" href="game.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Tela Inicial -->
+        <div id="menu-screen" class="screen active">
+            <h1>⚽ Adivinhe o Time!</h1>
+            <p class="subtitle">Um jogo de perguntas sobre times de futebol</p>
+            
+            <div class="menu-form">
+                <div class="form-group">
+                    <label>Número de Jogadores (2-4)</label>
+                    <input type="number" id="player-count" min="2" max="4" value="2">
+                </div>
+                
+                <div class="form-group">
+                    <label>Máximo de Chutes por Pessoa</label>
+                    <input type="number" id="max-guesses" min="1" max="10" value="3">
+                </div>
+                
+                <div class="form-group">
+                    <label>Máximo de Perguntas por Pessoa</label>
+                    <input type="number" id="max-questions" min="5" max="50" value="30">
+                </div>
+                
+                <button id="start-setup" class="btn btn-primary">Começar</button>
+            </div>
+        </div>
+
+        <!-- Tela de Configuração de Jogadores -->
+        <div id="players-screen" class="screen">
+            <h2>👥 Nome dos Jogadores</h2>
+            <div id="player-inputs"></div>
+            <button id="start-game" class="btn btn-primary">Iniciar Jogo</button>
+        </div>
+
+        <!-- Tela de Escolha do Time (Privada) -->
+        <div id="choose-team-screen" class="screen">
+            <h2>🎯 Escolha Secreta</h2>
+            <p id="chooser-name" class="highlight-text"></p>
+            <p class="instruction">Digite o nome do time que os outros vão tentar adivinhar:</p>
+            
+            <div class="private-input">
+                <input type="password" id="team-input" placeholder="Nome do time...">
+                <button id="toggle-visibility" class="btn-icon">👁️</button>
+            </div>
+            
+            <button id="confirm-team" class="btn btn-primary">Confirmar Time</button>
+            <p class="warning">⚠️ Não mostre para os outros jogadores!</p>
+        </div>
+
+        <!-- Tela Principal do Jogo -->
+        <div id="game-screen" class="screen">
+            <div class="game-header">
+                <h2>🏆 Rodada <span id="round-number">1</span></h2>
+                <p><span id="current-chooser"></span> escolheu um time!</p>
+            </div>
+
+            <div class="scoreboard">
+                <h3>Placar</h3>
+                <div id="scores"></div>
+            </div>
+
+            <div class="current-turn">
+                <p>Vez de: <span id="current-player" class="highlight-text"></span></p>
+                <p>Perguntas restantes: <span id="questions-left"></span> | Chutes restantes: <span id="guesses-left"></span></p>
+            </div>
+
+            <div class="questions-log">
+                <h3>📝 Perguntas e Respostas</h3>
+                <div id="log-container"></div>
+            </div>
+
+            <div class="action-buttons">
+                <button id="ask-question-btn" class="btn btn-secondary">Fazer Pergunta</button>
+                <button id="make-guess-btn" class="btn btn-primary">Chutar Time!</button>
+                <button id="pass-turn-btn" class="btn btn-outline">Passar Vez</button>
+            </div>
+        </div>
+
+        <!-- Modal de Pergunta -->
+        <div id="question-modal" class="modal">
+            <div class="modal-content">
+                <h3>❓ Faça sua Pergunta</h3>
+                <textarea id="question-input" placeholder="Digite sua pergunta..."></textarea>
+                <div class="modal-buttons">
+                    <button id="cancel-question" class="btn btn-outline">Cancelar</button>
+                    <button id="submit-question" class="btn btn-primary">Enviar</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal de Resposta -->
+        <div id="answer-modal" class="modal">
+            <div class="modal-content">
+                <h3>💬 Responda a Pergunta</h3>
+                <p id="question-display" class="question-text"></p>
+                <p class="instruction">O time é: <span id="team-reminder" class="highlight-text"></span></p>
+                <div class="answer-buttons">
+                    <button class="btn btn-success answer-btn" data-answer="Sim">✓ Sim</button>
+                    <button class="btn btn-danger answer-btn" data-answer="Não">✗ Não</button>
+                    <button class="btn btn-warning answer-btn" data-answer="Talvez">? Talvez</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal de Chute -->
+        <div id="guess-modal" class="modal">
+            <div class="modal-content">
+                <h3>🎯 Faça seu Chute!</h3>
+                <input type="text" id="guess-input" placeholder="Nome do time...">
+                <div class="modal-buttons">
+                    <button id="cancel-guess" class="btn btn-outline">Cancelar</button>
+                    <button id="submit-guess" class="btn btn-primary">Chutar!</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal de Resultado -->
+        <div id="result-modal" class="modal">
+            <div class="modal-content">
+                <div id="result-icon"></div>
+                <h3 id="result-title"></h3>
+                <p id="result-message"></p>
+                <button id="next-round" class="btn btn-primary">Próxima Rodada</button>
+            </div>
+        </div>
+
+        <!-- Tela de Fim de Jogo -->
+        <div id="end-screen" class="screen">
+            <h2>🏆 Fim de Jogo!</h2>
+            <div id="final-scores"></div>
+            <div id="winner-display"></div>
+            <button id="play-again" class="btn btn-primary">Jogar Novamente</button>
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>
