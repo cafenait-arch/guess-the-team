@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CreateRoom } from '@/components/game/CreateRoom';
@@ -8,26 +7,21 @@ import { useGameSession } from '@/hooks/useGameSession';
 import { LogOut } from 'lucide-react';
 
 const Index = () => {
-  const sessionId = useGameSession();
-  const [roomId, setRoomId] = useState<string | null>(null);
-  const [playerId, setPlayerId] = useState<string | null>(null);
+  const { sessionId, roomId, playerId, isLoading, setRoom, clearRoom } = useGameSession();
 
   const handleRoomCreated = (newRoomId: string, newPlayerId: string) => {
-    setRoomId(newRoomId);
-    setPlayerId(newPlayerId);
+    setRoom(newRoomId, newPlayerId);
   };
 
   const handleRoomJoined = (joinedRoomId: string, joinedPlayerId: string) => {
-    setRoomId(joinedRoomId);
-    setPlayerId(joinedPlayerId);
+    setRoom(joinedRoomId, joinedPlayerId);
   };
 
   const handleLeave = () => {
-    setRoomId(null);
-    setPlayerId(null);
+    clearRoom();
   };
 
-  if (!sessionId) {
+  if (!sessionId || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-900 via-green-800 to-emerald-900">
         <div className="animate-spin text-4xl">⚽</div>
