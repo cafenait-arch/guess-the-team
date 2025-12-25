@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -6,19 +6,29 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { generateRoomCode } from '@/lib/gameUtils';
 import { useToast } from '@/hooks/use-toast';
+import { soundManager } from '@/lib/sounds';
 
 interface CreateRoomProps {
   sessionId: string;
   onRoomCreated: (roomId: string, playerId: string) => void;
+  userId?: string;
+  displayName?: string;
 }
 
-export const CreateRoom = ({ sessionId, onRoomCreated }: CreateRoomProps) => {
+export const CreateRoom = ({ sessionId, onRoomCreated, userId, displayName }: CreateRoomProps) => {
   const [playerName, setPlayerName] = useState('');
   const [maxGuesses, setMaxGuesses] = useState(3);
   const [maxQuestions, setMaxQuestions] = useState(30);
   const [maxRounds, setMaxRounds] = useState(1);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+
+  // Set default name from profile
+  useEffect(() => {
+    if (displayName && !playerName) {
+      setPlayerName(displayName);
+    }
+  }, [displayName]);
 
   const handleCreate = async () => {
     if (!playerName.trim()) {
@@ -27,6 +37,8 @@ export const CreateRoom = ({ sessionId, onRoomCreated }: CreateRoomProps) => {
     }
 
     setLoading(true);
+    soundManager.playClick();
+    
     try {
       const code = generateRoomCode();
       
@@ -56,16 +68,19 @@ export const CreateRoom = ({ sessionId, onRoomCreated }: CreateRoomProps) => {
           questions_left: maxQuestions,
           player_order: 0,
           is_host: true,
+          user_id: userId || null,
         })
         .select()
         .single();
 
       if (playerError) throw playerError;
 
+      soundManager.playGameStart();
       onRoomCreated(room.id, player.id);
     } catch (error) {
       console.error('Error creating room:', error);
       toast({ title: 'Erro ao criar sala', variant: 'destructive' });
+      soundManager.playError();
     } finally {
       setLoading(false);
     }
