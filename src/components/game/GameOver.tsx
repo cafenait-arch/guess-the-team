@@ -1,27 +1,16 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { GamePlayer } from '@/lib/gameUtils';
-import { Trophy, Medal, Star } from 'lucide-react';
-import { useEffect } from 'react';
-import { soundManager } from '@/lib/sounds';
+import { Trophy, Medal } from 'lucide-react';
 
 interface GameOverProps {
   players: GamePlayer[];
   onPlayAgain: () => void;
-  currentPlayerId?: string;
 }
 
-export const GameOver = ({ players, onPlayAgain, currentPlayerId }: GameOverProps) => {
+export const GameOver = ({ players, onPlayAgain }: GameOverProps) => {
   const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
   const winner = sortedPlayers[0];
-  const isWinner = currentPlayerId === winner?.id;
-
-  useEffect(() => {
-    // Play victory or game over sound
-    if (isWinner) {
-      soundManager.playSuccess();
-    }
-  }, [isWinner]);
 
   return (
     <Card className="w-full max-w-lg">
@@ -36,13 +25,6 @@ export const GameOver = ({ players, onPlayAgain, currentPlayerId }: GameOverProp
           <p className="text-base sm:text-lg text-muted-foreground">Vencedor</p>
           <p className="text-2xl sm:text-3xl font-bold text-primary">{winner?.name}</p>
           <p className="text-lg sm:text-xl">{winner?.score} pontos</p>
-          {isWinner && (
-            <div className="flex items-center justify-center gap-1 mt-2 text-yellow-500">
-              <Star className="w-4 h-4" />
-              <span className="text-sm">Você venceu! +50 XP</span>
-              <Star className="w-4 h-4" />
-            </div>
-          )}
         </div>
 
         <div className="space-y-2 sm:space-y-3">
@@ -65,17 +47,10 @@ export const GameOver = ({ players, onPlayAgain, currentPlayerId }: GameOverProp
                   }`} />
                 )}
                 <span className="font-medium text-sm sm:text-base">{index + 1}º {player.name}</span>
-                {player.id === currentPlayerId && (
-                  <span className="text-xs text-muted-foreground">(você)</span>
-                )}
               </div>
               <span className="font-bold text-sm sm:text-base">{player.score} pts</span>
             </div>
           ))}
-        </div>
-
-        <div className="text-center text-sm text-muted-foreground">
-          <p>🎮 Todos os jogadores ganham +50 XP por completar a partida!</p>
         </div>
 
         <Button className="w-full" onClick={onPlayAgain}>

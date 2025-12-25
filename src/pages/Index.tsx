@@ -3,18 +3,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CreateRoom } from '@/components/game/CreateRoom';
 import { JoinRoom } from '@/components/game/JoinRoom';
 import { GameRoom } from '@/components/game/GameRoom';
-import { AuthPage } from '@/components/auth/AuthPage';
-import { ProfileCard } from '@/components/profile/ProfileCard';
-import { ProfileBadge } from '@/components/profile/ProfileBadge';
-import { SoundToggle } from '@/components/SoundToggle';
 import { useGameSession } from '@/hooks/useGameSession';
-import { useAuth } from '@/hooks/useAuth';
-import { LogOut, User } from 'lucide-react';
-import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+import { LogOut } from 'lucide-react';
 
 const Index = () => {
-  const { sessionId, roomId, playerId, isLoading: sessionLoading, setRoom, clearRoom } = useGameSession();
-  const { user, profile, loading: authLoading, signOut } = useAuth();
+  const { sessionId, roomId, playerId, isLoading, setRoom, clearRoom } = useGameSession();
 
   const handleRoomCreated = (newRoomId: string, newPlayerId: string) => {
     setRoom(newRoomId, newPlayerId);
@@ -28,27 +21,7 @@ const Index = () => {
     clearRoom();
   };
 
-  const handleSignOut = async () => {
-    await signOut();
-    clearRoom();
-  };
-
-  // Show loading while checking auth
-  if (authLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-900 via-green-800 to-emerald-900">
-        <div className="animate-spin text-4xl">⚽</div>
-      </div>
-    );
-  }
-
-  // Show auth page if not logged in
-  if (!user) {
-    return <AuthPage />;
-  }
-
-  // Show loading while checking session
-  if (!sessionId || sessionLoading) {
+  if (!sessionId || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-900 via-green-800 to-emerald-900">
         <div className="animate-spin text-4xl">⚽</div>
@@ -65,37 +38,21 @@ const Index = () => {
               <span>⚽</span>
               <span className="hidden sm:inline">Adivinhe o Time</span>
             </h1>
-            <div className="flex items-center gap-2">
-              <SoundToggle />
-              {profile && (
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button variant="ghost" size="icon">
-                      <User className="w-5 h-5 text-white" />
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="sm:max-w-md">
-                    <ProfileCard profile={profile} />
-                  </DialogContent>
-                </Dialog>
-              )}
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={handleLeave}
-                className="bg-background/80 backdrop-blur-sm"
-              >
-                <LogOut className="w-4 h-4 sm:mr-2" />
-                <span className="hidden sm:inline">Sair</span>
-              </Button>
-            </div>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleLeave}
+              className="bg-background/80 backdrop-blur-sm"
+            >
+              <LogOut className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Sair</span>
+            </Button>
           </div>
           <GameRoom 
             roomId={roomId} 
             playerId={playerId} 
             sessionId={sessionId}
             onLeave={handleLeave}
-            userId={user.id}
           />
         </div>
       </div>
@@ -104,26 +61,6 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-900 via-green-800 to-emerald-900 flex flex-col items-center justify-center p-4">
-      {/* Header with profile */}
-      <div className="absolute top-4 right-4 flex items-center gap-2">
-        <SoundToggle />
-        {profile && (
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button variant="ghost" className="gap-2">
-                <ProfileBadge profile={profile} size="sm" showLevel />
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-md">
-              <ProfileCard profile={profile} />
-            </DialogContent>
-          </Dialog>
-        )}
-        <Button variant="ghost" size="icon" onClick={handleSignOut}>
-          <LogOut className="w-5 h-5 text-white" />
-        </Button>
-      </div>
-
       <div className="text-center mb-6 sm:mb-8">
         <h1 className="text-3xl sm:text-5xl font-bold text-white mb-2">⚽ Adivinhe o Time</h1>
         <p className="text-green-200 text-sm sm:text-base">Jogo multiplayer de adivinhação de times de futebol</p>
@@ -135,20 +72,10 @@ const Index = () => {
           <TabsTrigger value="create" className="text-sm sm:text-base">Criar Sala</TabsTrigger>
         </TabsList>
         <TabsContent value="join">
-          <JoinRoom 
-            sessionId={sessionId} 
-            onRoomJoined={handleRoomJoined}
-            userId={user.id}
-            displayName={profile?.username || user.email?.split('@')[0] || 'Jogador'}
-          />
+          <JoinRoom sessionId={sessionId} onRoomJoined={handleRoomJoined} />
         </TabsContent>
         <TabsContent value="create">
-          <CreateRoom 
-            sessionId={sessionId} 
-            onRoomCreated={handleRoomCreated}
-            userId={user.id}
-            displayName={profile?.username || user.email?.split('@')[0] || 'Jogador'}
-          />
+          <CreateRoom sessionId={sessionId} onRoomCreated={handleRoomCreated} />
         </TabsContent>
       </Tabs>
 
@@ -161,7 +88,6 @@ const Index = () => {
           <li>O escolhedor responde Sim, Não, Talvez ou personalizado</li>
           <li>Chute quando achar que sabe! (85% de similaridade aceito)</li>
         </ol>
-        <p className="mt-3 text-yellow-300">🎮 Ganhe XP ao jogar e suba de nível!</p>
       </div>
     </div>
   );

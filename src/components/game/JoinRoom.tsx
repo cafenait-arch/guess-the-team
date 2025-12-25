@@ -1,31 +1,21 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { soundManager } from '@/lib/sounds';
 
 interface JoinRoomProps {
   sessionId: string;
   onRoomJoined: (roomId: string, playerId: string) => void;
-  userId?: string;
-  displayName?: string;
 }
 
-export const JoinRoom = ({ sessionId, onRoomJoined, userId, displayName }: JoinRoomProps) => {
+export const JoinRoom = ({ sessionId, onRoomJoined }: JoinRoomProps) => {
   const [playerName, setPlayerName] = useState('');
   const [roomCode, setRoomCode] = useState('');
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
-
-  // Set default name from profile
-  useEffect(() => {
-    if (displayName && !playerName) {
-      setPlayerName(displayName);
-    }
-  }, [displayName]);
 
   const handleJoin = async () => {
     if (!playerName.trim()) {
@@ -38,9 +28,7 @@ export const JoinRoom = ({ sessionId, onRoomJoined, userId, displayName }: JoinR
     }
 
     setLoading(true);
-    soundManager.playClick();
     const cleanCode = roomCode.trim().toUpperCase();
-    
     try {
       const { data: room, error: roomError } = await supabase
         .from('game_rooms')
@@ -51,13 +39,11 @@ export const JoinRoom = ({ sessionId, onRoomJoined, userId, displayName }: JoinR
       if (roomError) throw roomError;
       if (!room) {
         toast({ title: 'Sala não encontrada', variant: 'destructive' });
-        soundManager.playError();
         return;
       }
 
       if (room.status !== 'waiting') {
         toast({ title: 'Jogo já começou', variant: 'destructive' });
-        soundManager.playError();
         return;
       }
 
@@ -76,7 +62,6 @@ export const JoinRoom = ({ sessionId, onRoomJoined, userId, displayName }: JoinR
         .maybeSingle();
 
       if (existingPlayer.data) {
-        soundManager.playGameStart();
         onRoomJoined(room.id, existingPlayer.data.id);
         return;
       }
@@ -91,19 +76,16 @@ export const JoinRoom = ({ sessionId, onRoomJoined, userId, displayName }: JoinR
           questions_left: room.max_questions,
           player_order: players?.length || 0,
           is_host: false,
-          user_id: userId || null,
         })
         .select()
         .single();
 
       if (playerError) throw playerError;
 
-      soundManager.playGameStart();
       onRoomJoined(room.id, player.id);
     } catch (error) {
       console.error('Error joining room:', error);
       toast({ title: 'Erro ao entrar na sala', variant: 'destructive' });
-      soundManager.playError();
     } finally {
       setLoading(false);
     }
