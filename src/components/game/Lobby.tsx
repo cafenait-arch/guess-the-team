@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
 import { GamePlayer, GameRoom } from '@/lib/gameUtils';
 import { useToast } from '@/hooks/use-toast';
-import { Copy, Users, Star } from 'lucide-react';
+import { Copy, Users, Star, UserX } from 'lucide-react';
 
 interface PlayerProfile {
   username: string | null;
@@ -104,6 +104,22 @@ export const Lobby = ({ roomId, playerId, sessionId }: LobbyProps) => {
     }
   };
 
+  const handleKickPlayer = async (targetPlayerId: string) => {
+    if (!isHost) return;
+    
+    try {
+      await supabase
+        .from('game_players')
+        .delete()
+        .eq('id', targetPlayerId);
+      
+      toast({ title: 'Jogador expulso da sala' });
+    } catch (error) {
+      console.error('Error kicking player:', error);
+      toast({ title: 'Erro ao expulsar jogador', variant: 'destructive' });
+    }
+  };
+
   const startGame = async () => {
     if (players.length < 2) {
       toast({ title: 'Mínimo 2 jogadores', variant: 'destructive' });
@@ -176,9 +192,22 @@ export const Lobby = ({ roomId, playerId, sessionId }: LobbyProps) => {
                       </div>
                     </div>
                   </div>
-                  {player.is_host && (
-                    <Badge variant="secondary" className="text-xs">Host</Badge>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {player.is_host && (
+                      <Badge variant="secondary" className="text-xs">Host</Badge>
+                    )}
+                    {isHost && !player.is_host && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        onClick={() => handleKickPlayer(player.id)}
+                        title="Expulsar jogador"
+                      >
+                        <UserX className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
               );
             })}
