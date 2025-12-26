@@ -90,8 +90,9 @@ export const ProfileCard = ({ profile, compact = false }: ProfileCardProps) => {
 
   const displayName = profile.username || 'Jogador';
   const initials = displayName.slice(0, 2).toUpperCase();
-  const winRate = profile.games_played > 0 
-    ? Math.round((profile.games_won / profile.games_played) * 100) 
+  // Win rate = correct guesses / total guesses (accuracy rate from matches)
+  const winRate = profile.total_guesses > 0 
+    ? Math.round((profile.correct_guesses / profile.total_guesses) * 100) 
     : 0;
 
   if (compact) {
