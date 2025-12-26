@@ -67,19 +67,24 @@ const Index = () => {
             </h1>
             <div className="flex items-center gap-2">
               <SoundToggle />
-              {profile && (
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button variant="ghost" size="icon">
-                      <User className="w-5 h-5 text-white" />
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="sm:max-w-md">
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="ghost" size="icon">
+                    <User className="w-5 h-5 text-white" />
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md">
+                  {profile ? (
                     <ProfileCard profile={profile} />
-                  </DialogContent>
-                </Dialog>
-              )}
-              <Button 
+                  ) : (
+                    <div className="p-4 text-center">
+                      <p className="font-bold">{account.username}</p>
+                      <p className="text-sm text-muted-foreground">Carregando perfil...</p>
+                    </div>
+                  )}
+                </DialogContent>
+              </Dialog>
+              <Button
                 variant="outline" 
                 size="sm" 
                 onClick={handleLeave}
@@ -113,18 +118,23 @@ const Index = () => {
           </div>
           <div className="flex items-center gap-1">
             <SoundToggle />
-            {profile && (
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button variant="ghost" size="icon" className="text-white hover:bg-green-700/50">
-                    <User className="w-5 h-5" />
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-md">
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="ghost" size="icon" className="text-white hover:bg-green-700/50">
+                  <User className="w-5 h-5" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                {profile ? (
                   <ProfileCard profile={profile} />
-                </DialogContent>
-              </Dialog>
-            )}
+                ) : (
+                  <div className="p-4 text-center">
+                    <p className="font-bold">{account.username}</p>
+                    <p className="text-sm text-muted-foreground">Carregando perfil...</p>
+                  </div>
+                )}
+              </DialogContent>
+            </Dialog>
             <Button variant="ghost" size="icon" onClick={handleLogout} className="text-white hover:bg-green-700/50">
               <LogOut className="w-5 h-5" />
             </Button>
