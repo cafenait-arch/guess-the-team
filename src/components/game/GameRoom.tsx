@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { GamePlayer, GameRoom as GameRoomType } from '@/lib/gameUtils';
 import { Lobby } from './Lobby';
@@ -7,7 +7,7 @@ import { PlayingPhase } from './PlayingPhase';
 import { RoundEnd } from './RoundEnd';
 import { GameOver } from './GameOver';
 import { GameChat } from './GameChat';
-import { useAuth } from '@/hooks/useAuth';
+import { useGameAuth } from '@/hooks/useGameAuth';
 import { soundManager } from '@/lib/sounds';
 import { useToast } from '@/hooks/use-toast';
 
@@ -24,11 +24,12 @@ export const GameRoom = ({ roomId, playerId, sessionId, onLeave, userId }: GameR
   const [players, setPlayers] = useState<GamePlayer[]>([]);
   const [currentPlayer, setCurrentPlayer] = useState<GamePlayer | null>(null);
   const [prevStatus, setPrevStatus] = useState<string | null>(null);
-  const { addXp, profile } = useAuth();
+  const xpAwarded = useRef(false);
+  const { addXp, profile, account } = useGameAuth();
   const { toast } = useToast();
 
   const handleXpGain = useCallback(async (amount: number, reason: string) => {
-    if (!userId) return;
+    if (!account) return;
     
     const { leveledUp } = await addXp(amount);
     soundManager.playXpGain();
@@ -40,7 +41,20 @@ export const GameRoom = ({ roomId, playerId, sessionId, onLeave, userId }: GameR
         toast({ title: '🎉 Level Up!', description: `Você subiu para o nível ${(profile?.level || 1) + 1}!` });
       }, 500);
     }
-  }, [userId, addXp, toast, profile]);
+  }, [account, addXp, toast, profile]);
+
+  const updateStats = useCallback(async (isWinner: boolean, score: number) => {
+    if (!account) return;
+    
+    await supabase
+      .from('profiles')
+      .update({
+        games_played: (profile?.games_played || 0) + 1,
+        games_won: (profile?.games_won || 0) + (isWinner ? 1 : 0),
+        total_score: (profile?.total_score || 0) + score,
+      })
+      .eq('game_account_id', account.id);
+  }, [account, profile]);
 
   useEffect(() => {
     fetchData();
@@ -74,22 +88,30 @@ export const GameRoom = ({ roomId, playerId, sessionId, onLeave, userId }: GameR
     };
   }, [roomId, playerId]);
 
-  // Play sounds on status change
+  // Play sounds on status change and update stats
   useEffect(() => {
     if (room && prevStatus && room.status !== prevStatus) {
       if (room.status === 'playing') {
         soundManager.playGameStart();
       } else if (room.status === 'round_end') {
         soundManager.playRoundEnd();
-      } else if (room.status === 'game_over') {
-        // Award XP for completing a game
-        handleXpGain(50, 'Partida completa');
+      } else if (room.status === 'game_over' && !xpAwarded.current) {
+        xpAwarded.current = true;
+        // Calculate if winner and update stats
+        const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
+        const isWinner = sortedPlayers[0]?.id === playerId;
+        const myScore = currentPlayer?.score || 0;
+        
+        // Award XP: 50 base + 25 for winner + score
+        const xpGain = 50 + (isWinner ? 25 : 0) + myScore;
+        handleXpGain(xpGain, isWinner ? 'Vitória!' : 'Partida completa');
+        updateStats(isWinner, myScore);
       }
     }
     if (room) {
       setPrevStatus(room.status);
     }
-  }, [room?.status, prevStatus, handleXpGain]);
+  }, [room?.status, prevStatus, handleXpGain, updateStats, players, playerId, currentPlayer]);
 
   const fetchData = async () => {
     const { data: roomData } = await supabase
