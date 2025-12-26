@@ -103,24 +103,63 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-900 via-green-800 to-emerald-900 flex flex-col items-center justify-center p-4">
-      {/* Header with logout */}
-      <div className="absolute top-4 right-4 flex items-center gap-2">
-        <SoundToggle />
-        <Button variant="ghost" size="icon" onClick={handleLogout}>
-          <LogOut className="w-5 h-5 text-white" />
-        </Button>
+    <div className="min-h-screen bg-gradient-to-br from-green-900 via-green-800 to-emerald-900 flex flex-col items-center p-4 pt-16">
+      {/* Header with profile and logout - fixed at top */}
+      <div className="fixed top-0 left-0 right-0 z-50 bg-green-900/95 backdrop-blur-sm border-b border-green-700/50 px-4 py-2">
+        <div className="max-w-md mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-xl">⚽</span>
+            <span className="text-white font-bold text-sm">Adivinhe o Time</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <SoundToggle />
+            {profile && (
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="ghost" size="icon" className="text-white hover:bg-green-700/50">
+                    <User className="w-5 h-5" />
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md">
+                  <ProfileCard profile={profile} />
+                </DialogContent>
+              </Dialog>
+            )}
+            <Button variant="ghost" size="icon" onClick={handleLogout} className="text-white hover:bg-green-700/50">
+              <LogOut className="w-5 h-5" />
+            </Button>
+          </div>
+        </div>
       </div>
 
-      <div className="text-center mb-6 sm:mb-8">
-        <h1 className="text-3xl sm:text-5xl font-bold text-white mb-2">⚽ Adivinhe o Time</h1>
-        <p className="text-green-200 text-sm sm:text-base">Jogo multiplayer de adivinhação de times de futebol</p>
+      <div className="text-center mb-4 mt-2">
+        <h1 className="text-2xl sm:text-5xl font-bold text-white mb-1">⚽ Adivinhe o Time</h1>
+        <p className="text-green-200 text-xs sm:text-base">Jogo multiplayer de adivinhação</p>
       </div>
 
-      {/* Profile Card visible on main screen */}
+      {/* Mini profile badge */}
       {profile && (
-        <div className="w-full max-w-md mb-6">
-          <ProfileCard profile={profile} />
+        <div className="w-full max-w-md mb-4 p-3 bg-green-800/50 rounded-lg border border-green-700/50 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center text-white font-bold text-sm">
+              {(profile.username || 'J')[0].toUpperCase()}
+            </div>
+            <div>
+              <p className="text-white font-medium text-sm">{profile.username || 'Jogador'}</p>
+              <p className="text-green-300 text-xs">Nível {profile.level} • {profile.xp} XP</p>
+            </div>
+          </div>
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="ghost" size="sm" className="text-green-200 hover:text-white hover:bg-green-700/50">
+                <User className="w-4 h-4 mr-1" />
+                Perfil
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+              <ProfileCard profile={profile} />
+            </DialogContent>
+          </Dialog>
         </div>
       )}
 
