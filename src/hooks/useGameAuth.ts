@@ -121,7 +121,6 @@ export const useGameAuth = () => {
     const { error: profileError } = await supabase
       .from('profiles')
       .insert({
-        user_id: newAccount.id,
         game_account_id: newAccount.id,
         username: username,
       });
