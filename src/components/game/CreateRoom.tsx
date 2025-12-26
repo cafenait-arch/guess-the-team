@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,27 +12,19 @@ interface CreateRoomProps {
   sessionId: string;
   onRoomCreated: (roomId: string, playerId: string) => void;
   userId?: string;
-  displayName?: string;
+  displayName: string;
 }
 
 export const CreateRoom = ({ sessionId, onRoomCreated, userId, displayName }: CreateRoomProps) => {
-  const [playerName, setPlayerName] = useState('');
   const [maxGuesses, setMaxGuesses] = useState(3);
   const [maxQuestions, setMaxQuestions] = useState(30);
   const [maxRounds, setMaxRounds] = useState(1);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
-  // Set default name from profile
-  useEffect(() => {
-    if (displayName && !playerName) {
-      setPlayerName(displayName);
-    }
-  }, [displayName]);
-
   const handleCreate = async () => {
-    if (!playerName.trim()) {
-      toast({ title: 'Digite seu nome', variant: 'destructive' });
+    if (!displayName) {
+      toast({ title: 'Nome não encontrado', variant: 'destructive' });
       return;
     }
 
@@ -62,7 +54,7 @@ export const CreateRoom = ({ sessionId, onRoomCreated, userId, displayName }: Cr
         .from('game_players')
         .insert({
           room_id: room.id,
-          name: playerName.trim(),
+          name: displayName,
           session_id: sessionId,
           guesses_left: maxGuesses,
           questions_left: maxQuestions,
@@ -92,15 +84,9 @@ export const CreateRoom = ({ sessionId, onRoomCreated, userId, displayName }: Cr
         <CardTitle className="text-center text-lg sm:text-xl">Criar Sala</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="name">Seu Nome</Label>
-          <Input
-            id="name"
-            value={playerName}
-            onChange={(e) => setPlayerName(e.target.value)}
-            placeholder="Digite seu nome"
-            maxLength={50}
-          />
+        <div className="text-center p-3 bg-muted rounded-lg">
+          <p className="text-sm text-muted-foreground">Jogando como:</p>
+          <p className="font-bold text-lg">{displayName}</p>
         </div>
         
         <div className="grid grid-cols-2 gap-3">

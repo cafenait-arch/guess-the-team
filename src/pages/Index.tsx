@@ -134,7 +134,7 @@ const Index = () => {
             sessionId={sessionId} 
             onRoomJoined={handleRoomJoined}
             userId={account.id}
-            displayName={profile?.username || account.username}
+            displayName={profile?.username || account.username || 'Jogador'}
           />
         </TabsContent>
         <TabsContent value="create">
@@ -142,7 +142,7 @@ const Index = () => {
             sessionId={sessionId} 
             onRoomCreated={handleRoomCreated}
             userId={account.id}
-            displayName={profile?.username || account.username}
+            displayName={profile?.username || account.username || 'Jogador'}
           />
         </TabsContent>
       </Tabs>
