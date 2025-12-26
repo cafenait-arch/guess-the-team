@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      game_accounts: {
+        Row: {
+          created_at: string
+          id: string
+          password_hash: string
+          username: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          password_hash: string
+          username: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          password_hash?: string
+          username?: string
+        }
+        Relationships: []
+      }
       game_chat_messages: {
         Row: {
           created_at: string
@@ -252,6 +273,7 @@ export type Database = {
         Row: {
           avatar_url: string | null
           created_at: string
+          game_account_id: string | null
           id: string
           level: number
           updated_at: string
@@ -262,6 +284,7 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           created_at?: string
+          game_account_id?: string | null
           id?: string
           level?: number
           updated_at?: string
@@ -272,6 +295,7 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           created_at?: string
+          game_account_id?: string | null
           id?: string
           level?: number
           updated_at?: string
@@ -279,7 +303,15 @@ export type Database = {
           username?: string | null
           xp?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_game_account_id_fkey"
+            columns: ["game_account_id"]
+            isOneToOne: false
+            referencedRelation: "game_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
