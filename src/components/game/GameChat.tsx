@@ -4,14 +4,25 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
 import { ChatMessage, GamePlayer } from '@/lib/gameUtils';
 import { MessageCircle, Send } from 'lucide-react';
 
+interface PlayerProfile {
+  username: string | null;
+  avatar_url: string | null;
+  level: number;
+}
+
+interface PlayerWithProfile extends GamePlayer {
+  profile?: PlayerProfile | null;
+}
+
 interface GameChatProps {
   roomId: string;
   playerId: string;
-  players: GamePlayer[];
+  players: PlayerWithProfile[];
 }
 
 export const GameChat = ({ roomId, playerId, players }: GameChatProps) => {
@@ -92,7 +103,14 @@ export const GameChat = ({ roomId, playerId, players }: GameChatProps) => {
     }
   };
 
-  const getPlayerName = (id: string) => players.find(p => p.id === id)?.name || 'Jogador';
+  const getPlayerInfo = (id: string) => {
+    const player = players.find(p => p.id === id);
+    return {
+      name: player?.profile?.username || player?.name || 'Jogador',
+      avatar: player?.profile?.avatar_url || null,
+      initials: (player?.profile?.username || player?.name || 'J').slice(0, 2).toUpperCase(),
+    };
+  };
   const currentPlayer = players.find(p => p.id === playerId);
 
   return (
@@ -131,22 +149,29 @@ export const GameChat = ({ roomId, playerId, players }: GameChatProps) => {
             ) : (
               messages.map((msg) => {
                 const isMe = msg.player_id === playerId;
+                const playerInfo = getPlayerInfo(msg.player_id);
                 return (
                   <div
                     key={msg.id}
-                    className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}
+                    className={`flex gap-2 ${isMe ? 'flex-row-reverse' : 'flex-row'}`}
                   >
-                    <span className="text-xs text-muted-foreground mb-1">
-                      {isMe ? 'Você' : getPlayerName(msg.player_id)}
-                    </span>
-                    <div
-                      className={`rounded-lg px-3 py-2 max-w-[85%] ${
-                        isMe 
-                          ? 'bg-primary text-primary-foreground' 
-                          : 'bg-muted'
-                      }`}
-                    >
-                      <p className="text-sm break-words">{msg.message}</p>
+                    <Avatar className="w-8 h-8 flex-shrink-0">
+                      <AvatarImage src={playerInfo.avatar || undefined} />
+                      <AvatarFallback className="text-xs">{playerInfo.initials}</AvatarFallback>
+                    </Avatar>
+                    <div className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
+                      <span className="text-xs text-muted-foreground mb-1">
+                        {isMe ? 'Você' : playerInfo.name}
+                      </span>
+                      <div
+                        className={`rounded-lg px-3 py-2 max-w-[85%] ${
+                          isMe 
+                            ? 'bg-primary text-primary-foreground' 
+                            : 'bg-muted'
+                        }`}
+                      >
+                        <p className="text-sm break-words">{msg.message}</p>
+                      </div>
                     </div>
                   </div>
                 );

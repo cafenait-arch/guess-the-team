@@ -22,9 +22,16 @@ export interface UserProfile {
   game_account_id: string | null;
 }
 
-// XP required for each level (cumulative)
+// XP required for each level (cumulative from level 1 starting at 0 XP)
+// Level 1: 0-99 XP, Level 2: 100-299 XP, Level 3: 300-599 XP, etc.
 export const getXpForLevel = (level: number): number => {
-  return level * level * 100;
+  if (level <= 1) return 0;
+  // Cumulative XP required to reach this level
+  let total = 0;
+  for (let i = 1; i < level; i++) {
+    total += i * 100;
+  }
+  return total;
 };
 
 export const getLevelFromXp = (xp: number): number => {
@@ -43,9 +50,9 @@ export const getXpProgress = (xp: number): { current: number; required: number; 
   const requiredXp = nextLevelXp - currentLevelXp;
   
   return {
-    current: progressXp,
+    current: Math.max(0, progressXp),
     required: requiredXp,
-    percentage: (progressXp / requiredXp) * 100,
+    percentage: Math.max(0, (progressXp / requiredXp) * 100),
   };
 };
 

@@ -8,8 +8,19 @@ import { RoundEnd } from './RoundEnd';
 import { GameOver } from './GameOver';
 import { GameChat } from './GameChat';
 import { useGameAuth } from '@/hooks/useGameAuth';
+import { useInactivityKick } from '@/hooks/useInactivityKick';
 import { soundManager } from '@/lib/sounds';
 import { useToast } from '@/hooks/use-toast';
+
+interface PlayerProfile {
+  username: string | null;
+  avatar_url: string | null;
+  level: number;
+}
+
+interface PlayerWithProfile extends GamePlayer {
+  profile?: PlayerProfile | null;
+}
 
 interface GameRoomProps {
   roomId: string;
@@ -21,12 +32,20 @@ interface GameRoomProps {
 
 export const GameRoom = ({ roomId, playerId, sessionId, onLeave, userId }: GameRoomProps) => {
   const [room, setRoom] = useState<GameRoomType | null>(null);
-  const [players, setPlayers] = useState<GamePlayer[]>([]);
+  const [players, setPlayers] = useState<PlayerWithProfile[]>([]);
   const [currentPlayer, setCurrentPlayer] = useState<GamePlayer | null>(null);
   const [prevStatus, setPrevStatus] = useState<string | null>(null);
   const xpAwarded = useRef(false);
   const { addXp, profile, account } = useGameAuth();
   const { toast } = useToast();
+
+  // Inactivity kick - only active during playing phase
+  useInactivityKick({
+    roomId,
+    playerId,
+    isActive: room?.status === 'playing' || room?.status === 'choosing',
+    onKicked: onLeave,
+  });
 
   const handleXpGain = useCallback(async (amount: number, reason: string) => {
     if (!account) return;
@@ -131,9 +150,39 @@ export const GameRoom = ({ roomId, playerId, sessionId, onLeave, userId }: GameR
       .order('player_order');
 
     if (playersData) {
-      setPlayers(playersData as GamePlayer[]);
+      // Fetch profiles for players with user_id
+      const playersWithProfiles: PlayerWithProfile[] = await Promise.all(
+        playersData.map(async (player) => {
+          if (player.user_id) {
+            const { data: profileData } = await supabase
+              .from('profiles')
+              .select('username, avatar_url, level')
+              .eq('game_account_id', player.user_id)
+              .maybeSingle();
+            return { ...player, profile: profileData } as PlayerWithProfile;
+          }
+          return player as PlayerWithProfile;
+        })
+      );
+      setPlayers(playersWithProfiles);
       const me = playersData.find((p: GamePlayer) => p.id === playerId);
       if (me) setCurrentPlayer(me as GamePlayer);
+    }
+  };
+
+  const handleKickPlayer = async (targetPlayerId: string) => {
+    if (!currentPlayer?.is_host) return;
+    
+    try {
+      await supabase
+        .from('game_players')
+        .delete()
+        .eq('id', targetPlayerId);
+      
+      toast({ title: 'Jogador expulso da sala' });
+    } catch (error) {
+      console.error('Error kicking player:', error);
+      toast({ title: 'Erro ao expulsar jogador', variant: 'destructive' });
     }
   };
 
@@ -170,6 +219,8 @@ export const GameRoom = ({ roomId, playerId, sessionId, onLeave, userId }: GameR
           players={players} 
           currentPlayer={currentPlayer}
           onCorrectGuess={() => handleXpGain(25, 'Acertou o time')}
+          isHost={currentPlayer.is_host}
+          onKickPlayer={handleKickPlayer}
         />
       )}
 
