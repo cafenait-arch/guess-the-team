@@ -277,7 +277,7 @@ export type Database = {
           id: string
           level: number
           updated_at: string
-          user_id: string
+          user_id: string | null
           username: string | null
           xp: number
         }
@@ -288,7 +288,7 @@ export type Database = {
           id?: string
           level?: number
           updated_at?: string
-          user_id: string
+          user_id?: string | null
           username?: string | null
           xp?: number
         }
@@ -299,7 +299,7 @@ export type Database = {
           id?: string
           level?: number
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
           username?: string | null
           xp?: number
         }
