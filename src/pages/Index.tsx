@@ -104,21 +104,9 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-900 via-green-800 to-emerald-900 flex flex-col items-center justify-center p-4">
-      {/* Header with profile */}
+      {/* Header with logout */}
       <div className="absolute top-4 right-4 flex items-center gap-2">
         <SoundToggle />
-        {profile && (
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button variant="ghost" className="gap-2">
-                <ProfileBadge profile={profile} size="sm" showLevel />
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-md">
-              <ProfileCard profile={profile} />
-            </DialogContent>
-          </Dialog>
-        )}
         <Button variant="ghost" size="icon" onClick={handleLogout}>
           <LogOut className="w-5 h-5 text-white" />
         </Button>
@@ -128,6 +116,13 @@ const Index = () => {
         <h1 className="text-3xl sm:text-5xl font-bold text-white mb-2">⚽ Adivinhe o Time</h1>
         <p className="text-green-200 text-sm sm:text-base">Jogo multiplayer de adivinhação de times de futebol</p>
       </div>
+
+      {/* Profile Card visible on main screen */}
+      {profile && (
+        <div className="w-full max-w-md mb-6">
+          <ProfileCard profile={profile} />
+        </div>
+      )}
 
       <Tabs defaultValue="join" className="w-full max-w-md">
         <TabsList className="grid w-full grid-cols-2">
