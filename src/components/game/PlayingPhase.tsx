@@ -7,15 +7,17 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
 import { GamePlayer, GameRoom, GameQuestion, isGuessCorrect } from '@/lib/gameUtils';
 import { useToast } from '@/hooks/use-toast';
+import { soundManager } from '@/lib/sounds';
 import { HelpCircle, Target, Eye, Send, StopCircle } from 'lucide-react';
 
 interface PlayingPhaseProps {
   room: GameRoom;
   players: GamePlayer[];
   currentPlayer: GamePlayer;
+  onCorrectGuess?: () => void;
 }
 
-export const PlayingPhase = ({ room, players, currentPlayer }: PlayingPhaseProps) => {
+export const PlayingPhase = ({ room, players, currentPlayer, onCorrectGuess }: PlayingPhaseProps) => {
   const [input, setInput] = useState('');
   const [customAnswer, setCustomAnswer] = useState('');
   const [questions, setQuestions] = useState<GameQuestion[]>([]);
@@ -116,6 +118,7 @@ export const PlayingPhase = ({ room, players, currentPlayer }: PlayingPhaseProps
     if (!isHost) return;
     
     setLoading(true);
+    soundManager.playClick();
     try {
       await supabase
         .from('game_rooms')
@@ -132,10 +135,12 @@ export const PlayingPhase = ({ room, players, currentPlayer }: PlayingPhaseProps
     if (!input.trim()) return;
     if (currentPlayer.questions_left <= 0) {
       toast({ title: 'Você não tem mais perguntas', variant: 'destructive' });
+      soundManager.playError();
       return;
     }
 
     setLoading(true);
+    soundManager.playClick();
     try {
       await supabase.from('game_questions').insert({
         room_id: room.id,
@@ -154,6 +159,7 @@ export const PlayingPhase = ({ room, players, currentPlayer }: PlayingPhaseProps
     } catch (error) {
       console.error('Error asking question:', error);
       toast({ title: 'Erro ao enviar pergunta', variant: 'destructive' });
+      soundManager.playError();
     } finally {
       setLoading(false);
     }
@@ -163,10 +169,12 @@ export const PlayingPhase = ({ room, players, currentPlayer }: PlayingPhaseProps
     if (!input.trim()) return;
     if (currentPlayer.guesses_left <= 0) {
       toast({ title: 'Você não tem mais chutes', variant: 'destructive' });
+      soundManager.playError();
       return;
     }
 
     setLoading(true);
+    soundManager.playClick();
     try {
       const isCorrect = isGuessCorrect(input.trim(), room.current_team || '');
 
@@ -190,9 +198,12 @@ export const PlayingPhase = ({ room, players, currentPlayer }: PlayingPhaseProps
           .update({ score: currentPlayer.score + 5 })
           .eq('id', currentPlayer.id);
 
+        soundManager.playSuccess();
         toast({ title: 'Você acertou!' });
+        onCorrectGuess?.();
         await endRound();
       } else {
+        soundManager.playError();
         toast({ title: 'Errado!', variant: 'destructive' });
         
         const nextIndex = getNextTurnIndex();
@@ -208,6 +219,7 @@ export const PlayingPhase = ({ room, players, currentPlayer }: PlayingPhaseProps
     } catch (error) {
       console.error('Error guessing:', error);
       toast({ title: 'Erro ao chutar', variant: 'destructive' });
+      soundManager.playError();
     } finally {
       setLoading(false);
     }
@@ -215,6 +227,7 @@ export const PlayingPhase = ({ room, players, currentPlayer }: PlayingPhaseProps
 
   const handleAnswer = async (questionId: string, answer: string) => {
     setLoading(true);
+    soundManager.playClick();
     try {
       await supabase
         .from('game_questions')
@@ -227,6 +240,7 @@ export const PlayingPhase = ({ room, players, currentPlayer }: PlayingPhaseProps
         .update({ current_turn_index: nextIndex })
         .eq('id', room.id);
 
+      soundManager.playTurnChange();
       setCustomAnswer('');
     } catch (error) {
       console.error('Error answering:', error);

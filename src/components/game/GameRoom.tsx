@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { GamePlayer, GameRoom as GameRoomType } from '@/lib/gameUtils';
 import { Lobby } from './Lobby';
@@ -7,18 +7,40 @@ import { PlayingPhase } from './PlayingPhase';
 import { RoundEnd } from './RoundEnd';
 import { GameOver } from './GameOver';
 import { GameChat } from './GameChat';
+import { useAuth } from '@/hooks/useAuth';
+import { soundManager } from '@/lib/sounds';
+import { useToast } from '@/hooks/use-toast';
 
 interface GameRoomProps {
   roomId: string;
   playerId: string;
   sessionId: string;
   onLeave: () => void;
+  userId?: string;
 }
 
-export const GameRoom = ({ roomId, playerId, sessionId, onLeave }: GameRoomProps) => {
+export const GameRoom = ({ roomId, playerId, sessionId, onLeave, userId }: GameRoomProps) => {
   const [room, setRoom] = useState<GameRoomType | null>(null);
   const [players, setPlayers] = useState<GamePlayer[]>([]);
   const [currentPlayer, setCurrentPlayer] = useState<GamePlayer | null>(null);
+  const [prevStatus, setPrevStatus] = useState<string | null>(null);
+  const { addXp, profile } = useAuth();
+  const { toast } = useToast();
+
+  const handleXpGain = useCallback(async (amount: number, reason: string) => {
+    if (!userId) return;
+    
+    const { leveledUp } = await addXp(amount);
+    soundManager.playXpGain();
+    toast({ title: `+${amount} XP: ${reason}` });
+    
+    if (leveledUp) {
+      setTimeout(() => {
+        soundManager.playLevelUp();
+        toast({ title: '🎉 Level Up!', description: `Você subiu para o nível ${(profile?.level || 1) + 1}!` });
+      }, 500);
+    }
+  }, [userId, addXp, toast, profile]);
 
   useEffect(() => {
     fetchData();
@@ -51,6 +73,23 @@ export const GameRoom = ({ roomId, playerId, sessionId, onLeave }: GameRoomProps
       supabase.removeChannel(playerChannel);
     };
   }, [roomId, playerId]);
+
+  // Play sounds on status change
+  useEffect(() => {
+    if (room && prevStatus && room.status !== prevStatus) {
+      if (room.status === 'playing') {
+        soundManager.playGameStart();
+      } else if (room.status === 'round_end') {
+        soundManager.playRoundEnd();
+      } else if (room.status === 'game_over') {
+        // Award XP for completing a game
+        handleXpGain(50, 'Partida completa');
+      }
+    }
+    if (room) {
+      setPrevStatus(room.status);
+    }
+  }, [room?.status, prevStatus, handleXpGain]);
 
   const fetchData = async () => {
     const { data: roomData } = await supabase
@@ -104,7 +143,12 @@ export const GameRoom = ({ roomId, playerId, sessionId, onLeave }: GameRoomProps
       )}
 
       {room.status === 'playing' && (
-        <PlayingPhase room={room} players={players} currentPlayer={currentPlayer} />
+        <PlayingPhase 
+          room={room} 
+          players={players} 
+          currentPlayer={currentPlayer}
+          onCorrectGuess={() => handleXpGain(25, 'Acertou o time')}
+        />
       )}
 
       {room.status === 'round_end' && (
@@ -112,7 +156,7 @@ export const GameRoom = ({ roomId, playerId, sessionId, onLeave }: GameRoomProps
       )}
 
       {room.status === 'game_over' && (
-        <GameOver players={players} onPlayAgain={onLeave} />
+        <GameOver players={players} onPlayAgain={onLeave} currentPlayerId={playerId} />
       )}
     </div>
   );
