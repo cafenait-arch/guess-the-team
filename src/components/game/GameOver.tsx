@@ -1,9 +1,21 @@
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { GamePlayer } from '@/lib/gameUtils';
+import { supabase } from '@/integrations/supabase/client';
 import { Trophy, Medal, Star } from 'lucide-react';
-import { useEffect } from 'react';
 import { soundManager } from '@/lib/sounds';
+
+interface PlayerProfile {
+  username: string | null;
+  avatar_url: string | null;
+  level: number;
+}
+
+interface PlayerWithProfile extends GamePlayer {
+  profile?: PlayerProfile | null;
+}
 
 interface GameOverProps {
   players: GamePlayer[];
@@ -12,12 +24,36 @@ interface GameOverProps {
 }
 
 export const GameOver = ({ players, onPlayAgain, currentPlayerId }: GameOverProps) => {
-  const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
+  const [playersWithProfiles, setPlayersWithProfiles] = useState<PlayerWithProfile[]>([]);
+  
+  useEffect(() => {
+    const fetchProfiles = async () => {
+      const enriched = await Promise.all(
+        players.map(async (player) => {
+          if (player.user_id) {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('username, avatar_url, level')
+              .eq('game_account_id', player.user_id)
+              .maybeSingle();
+            return { ...player, profile } as PlayerWithProfile;
+          }
+          return player as PlayerWithProfile;
+        })
+      );
+      setPlayersWithProfiles(enriched.sort((a, b) => b.score - a.score));
+    };
+    fetchProfiles();
+  }, [players]);
+
+  const sortedPlayers = playersWithProfiles.length > 0 
+    ? playersWithProfiles 
+    : [...players].sort((a, b) => b.score - a.score);
   const winner = sortedPlayers[0];
   const isWinner = currentPlayerId === winner?.id;
+  const winnerProfile = (winner as PlayerWithProfile)?.profile;
 
   useEffect(() => {
-    // Play victory or game over sound
     if (isWinner) {
       soundManager.playSuccess();
     }
@@ -34,48 +70,73 @@ export const GameOver = ({ players, onPlayAgain, currentPlayerId }: GameOverProp
       <CardContent className="space-y-4 sm:space-y-6">
         <div className="text-center">
           <p className="text-base sm:text-lg text-muted-foreground">Vencedor</p>
-          <p className="text-2xl sm:text-3xl font-bold text-primary">{winner?.name}</p>
-          <p className="text-lg sm:text-xl">{winner?.score} pontos</p>
+          <div className="flex items-center justify-center gap-3 mt-2">
+            <Avatar className="w-16 h-16">
+              <AvatarImage src={winnerProfile?.avatar_url || undefined} />
+              <AvatarFallback className="text-xl">
+                {(winnerProfile?.username || winner?.name || 'J').slice(0, 2).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <p className="text-2xl sm:text-3xl font-bold text-primary">
+                {winnerProfile?.username || winner?.name}
+              </p>
+              <p className="text-lg sm:text-xl">{winner?.score} pontos</p>
+            </div>
+          </div>
           {isWinner && (
             <div className="flex items-center justify-center gap-1 mt-2 text-yellow-500">
               <Star className="w-4 h-4" />
-              <span className="text-sm">Você venceu! +50 XP</span>
+              <span className="text-sm">Você venceu! +75 XP</span>
               <Star className="w-4 h-4" />
             </div>
           )}
         </div>
 
         <div className="space-y-2 sm:space-y-3">
-          {sortedPlayers.map((player, index) => (
-            <div 
-              key={player.id}
-              className={`flex items-center justify-between p-3 sm:p-4 rounded-lg ${
-                index === 0 ? 'bg-yellow-100 dark:bg-yellow-900/30' :
-                index === 1 ? 'bg-gray-100 dark:bg-gray-800' :
-                index === 2 ? 'bg-orange-100 dark:bg-orange-900/30' :
-                'bg-muted'
-              }`}
-            >
-              <div className="flex items-center gap-2 sm:gap-3">
-                {index < 3 && (
-                  <Medal className={`w-5 h-5 sm:w-6 sm:h-6 ${
-                    index === 0 ? 'text-yellow-500' :
-                    index === 1 ? 'text-gray-400' :
-                    'text-orange-500'
-                  }`} />
-                )}
-                <span className="font-medium text-sm sm:text-base">{index + 1}º {player.name}</span>
-                {player.id === currentPlayerId && (
-                  <span className="text-xs text-muted-foreground">(você)</span>
-                )}
+          {sortedPlayers.map((player, index) => {
+            const p = player as PlayerWithProfile;
+            const displayName = p.profile?.username || p.name;
+            const avatarUrl = p.profile?.avatar_url;
+            const initials = displayName.slice(0, 2).toUpperCase();
+            
+            return (
+              <div 
+                key={player.id}
+                className={`flex items-center justify-between p-3 sm:p-4 rounded-lg ${
+                  index === 0 ? 'bg-yellow-100 dark:bg-yellow-900/30' :
+                  index === 1 ? 'bg-gray-100 dark:bg-gray-800' :
+                  index === 2 ? 'bg-orange-100 dark:bg-orange-900/30' :
+                  'bg-muted'
+                }`}
+              >
+                <div className="flex items-center gap-2 sm:gap-3">
+                  {index < 3 && (
+                    <Medal className={`w-5 h-5 sm:w-6 sm:h-6 ${
+                      index === 0 ? 'text-yellow-500' :
+                      index === 1 ? 'text-gray-400' :
+                      'text-orange-500'
+                    }`} />
+                  )}
+                  <Avatar className="w-8 h-8">
+                    <AvatarImage src={avatarUrl || undefined} />
+                    <AvatarFallback className="text-xs">{initials}</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <span className="font-medium text-sm sm:text-base">{index + 1}º {displayName}</span>
+                    {player.id === currentPlayerId && (
+                      <span className="text-xs text-muted-foreground ml-1">(você)</span>
+                    )}
+                  </div>
+                </div>
+                <span className="font-bold text-sm sm:text-base">{player.score} pts</span>
               </div>
-              <span className="font-bold text-sm sm:text-base">{player.score} pts</span>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         <div className="text-center text-sm text-muted-foreground">
-          <p>🎮 Todos os jogadores ganham +50 XP por completar a partida!</p>
+          <p>🎮 XP ganho = 50 base + pontuação + 25 bônus vitória!</p>
         </div>
 
         <Button className="w-full" onClick={onPlayAgain}>

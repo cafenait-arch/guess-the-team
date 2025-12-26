@@ -2,10 +2,21 @@ import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
 import { GamePlayer, GameRoom } from '@/lib/gameUtils';
 import { useToast } from '@/hooks/use-toast';
-import { Copy, Users } from 'lucide-react';
+import { Copy, Users, Star } from 'lucide-react';
+
+interface PlayerProfile {
+  username: string | null;
+  avatar_url: string | null;
+  level: number;
+}
+
+interface PlayerWithProfile extends GamePlayer {
+  profile?: PlayerProfile | null;
+}
 
 interface LobbyProps {
   roomId: string;
@@ -15,14 +26,13 @@ interface LobbyProps {
 
 export const Lobby = ({ roomId, playerId, sessionId }: LobbyProps) => {
   const [room, setRoom] = useState<GameRoom | null>(null);
-  const [players, setPlayers] = useState<GamePlayer[]>([]);
+  const [players, setPlayers] = useState<PlayerWithProfile[]>([]);
   const [isHost, setIsHost] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
     fetchRoomData();
     
-    // Use unique channel names to avoid conflicts
     const roomChannel = supabase
       .channel(`lobby-room-${roomId}`)
       .on(
@@ -41,7 +51,6 @@ export const Lobby = ({ roomId, playerId, sessionId }: LobbyProps) => {
       )
       .subscribe();
 
-    // Polling fallback for reliability
     const pollInterval = setInterval(fetchRoomData, 3000);
 
     return () => {
@@ -70,7 +79,21 @@ export const Lobby = ({ roomId, playerId, sessionId }: LobbyProps) => {
       .order('player_order');
 
     if (playersData) {
-      setPlayers(playersData as GamePlayer[]);
+      // Fetch profiles for players with user_id
+      const playersWithProfiles: PlayerWithProfile[] = await Promise.all(
+        playersData.map(async (player) => {
+          if (player.user_id) {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('username, avatar_url, level')
+              .eq('game_account_id', player.user_id)
+              .maybeSingle();
+            return { ...player, profile } as PlayerWithProfile;
+          }
+          return player as PlayerWithProfile;
+        })
+      );
+      setPlayers(playersWithProfiles);
     }
   };
 
@@ -87,7 +110,6 @@ export const Lobby = ({ roomId, playerId, sessionId }: LobbyProps) => {
       return;
     }
 
-    // Select random first chooser
     const randomChooserIndex = Math.floor(Math.random() * players.length);
 
     await supabase
@@ -130,17 +152,36 @@ export const Lobby = ({ roomId, playerId, sessionId }: LobbyProps) => {
             Jogadores ({players.length})
           </p>
           <div className="space-y-2">
-            {players.map((player) => (
-              <div 
-                key={player.id} 
-                className="flex items-center justify-between p-2 sm:p-3 bg-muted rounded-lg"
-              >
-                <span className="font-medium text-sm sm:text-base">{player.name}</span>
-                {player.is_host && (
-                  <Badge variant="secondary" className="text-xs">Host</Badge>
-                )}
-              </div>
-            ))}
+            {players.map((player) => {
+              const displayName = player.profile?.username || player.name;
+              const initials = displayName.slice(0, 2).toUpperCase();
+              const avatarUrl = player.profile?.avatar_url;
+              const level = player.profile?.level || 1;
+              
+              return (
+                <div 
+                  key={player.id} 
+                  className="flex items-center justify-between p-2 sm:p-3 bg-muted rounded-lg"
+                >
+                  <div className="flex items-center gap-3">
+                    <Avatar className="w-10 h-10">
+                      <AvatarImage src={avatarUrl || undefined} />
+                      <AvatarFallback className="text-sm">{initials}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="font-medium text-sm sm:text-base">{displayName}</p>
+                      <div className="flex items-center gap-1">
+                        <Star className="w-3 h-3 text-yellow-500" />
+                        <span className="text-xs text-muted-foreground">Nv. {level}</span>
+                      </div>
+                    </div>
+                  </div>
+                  {player.is_host && (
+                    <Badge variant="secondary" className="text-xs">Host</Badge>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
 

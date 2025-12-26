@@ -274,8 +274,11 @@ export type Database = {
           avatar_url: string | null
           created_at: string
           game_account_id: string | null
+          games_played: number
+          games_won: number
           id: string
           level: number
+          total_score: number
           updated_at: string
           user_id: string | null
           username: string | null
@@ -285,8 +288,11 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           game_account_id?: string | null
+          games_played?: number
+          games_won?: number
           id?: string
           level?: number
+          total_score?: number
           updated_at?: string
           user_id?: string | null
           username?: string | null
@@ -296,8 +302,11 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           game_account_id?: string | null
+          games_played?: number
+          games_won?: number
           id?: string
           level?: number
+          total_score?: number
           updated_at?: string
           user_id?: string | null
           username?: string | null

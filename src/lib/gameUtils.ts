@@ -74,6 +74,7 @@ export interface GamePlayer {
   questions_left: number;
   player_order: number;
   is_host: boolean;
+  user_id: string | null;
   created_at: string;
 }
 

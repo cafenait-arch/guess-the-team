@@ -9,11 +9,14 @@ export interface GameAccount {
 
 export interface UserProfile {
   id: string;
-  user_id: string;
+  user_id: string | null;
   username: string | null;
   avatar_url: string | null;
   xp: number;
   level: number;
+  games_played: number;
+  games_won: number;
+  total_score: number;
   created_at: string;
   updated_at: string;
   game_account_id: string | null;
@@ -62,17 +65,40 @@ export const useGameAuth = () => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchProfile = useCallback(async (accountId: string) => {
+  const fetchProfile = useCallback(async (accountId: string, accountUsername?: string): Promise<UserProfile | null> => {
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
       .eq('game_account_id', accountId)
       .maybeSingle();
 
-    if (data && !error) {
-      setProfile(data as UserProfile);
+    if (error) {
+      console.error('Error fetching profile:', error);
+      return null;
     }
-    return data;
+
+    // If profile doesn't exist, create it
+    if (!data) {
+      const { data: newProfile, error: createError } = await supabase
+        .from('profiles')
+        .insert({
+          game_account_id: accountId,
+          username: accountUsername || 'Jogador',
+        })
+        .select()
+        .single();
+
+      if (createError) {
+        console.error('Error creating profile:', createError);
+        return null;
+      }
+
+      setProfile(newProfile as UserProfile);
+      return newProfile as UserProfile;
+    }
+
+    setProfile(data as UserProfile);
+    return data as UserProfile;
   }, []);
 
   // Load account from localStorage on mount
