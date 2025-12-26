@@ -27,8 +27,6 @@ export const PlayingPhase = ({ room, players, currentPlayer, onCorrectGuess }: P
 
   const chooser = players[room.current_chooser_index];
   const isChooser = chooser?.id === currentPlayer.id;
-  const currentTurnPlayer = players[room.current_turn_index];
-  const isMyTurn = currentTurnPlayer?.id === currentPlayer.id && !isChooser;
   const isHost = currentPlayer.is_host;
 
   useEffect(() => {
@@ -59,13 +57,6 @@ export const PlayingPhase = ({ room, players, currentPlayer, onCorrectGuess }: P
     if (data) {
       setQuestions(data as GameQuestion[]);
     }
-  };
-
-  const getNextTurnIndex = () => {
-    const guessers = players.filter(p => p.id !== chooser.id);
-    const currentGuesserArrayIndex = guessers.findIndex(p => p.id === currentTurnPlayer.id);
-    const nextGuesserArrayIndex = (currentGuesserArrayIndex + 1) % guessers.length;
-    return players.findIndex(p => p.id === guessers[nextGuesserArrayIndex].id);
   };
 
   const checkRoundEnd = async () => {
@@ -156,6 +147,7 @@ export const PlayingPhase = ({ room, players, currentPlayer, onCorrectGuess }: P
         .eq('id', currentPlayer.id);
 
       setInput('');
+      toast({ title: 'Pergunta enviada!' });
     } catch (error) {
       console.error('Error asking question:', error);
       toast({ title: 'Erro ao enviar pergunta', variant: 'destructive' });
@@ -205,13 +197,6 @@ export const PlayingPhase = ({ room, players, currentPlayer, onCorrectGuess }: P
       } else {
         soundManager.playError();
         toast({ title: 'Errado!', variant: 'destructive' });
-        
-        const nextIndex = getNextTurnIndex();
-        await supabase
-          .from('game_rooms')
-          .update({ current_turn_index: nextIndex })
-          .eq('id', room.id);
-
         await checkRoundEnd();
       }
 
@@ -234,12 +219,6 @@ export const PlayingPhase = ({ room, players, currentPlayer, onCorrectGuess }: P
         .update({ answer })
         .eq('id', questionId);
 
-      const nextIndex = getNextTurnIndex();
-      await supabase
-        .from('game_rooms')
-        .update({ current_turn_index: nextIndex })
-        .eq('id', room.id);
-
       soundManager.playTurnChange();
       setCustomAnswer('');
     } catch (error) {
@@ -254,8 +233,13 @@ export const PlayingPhase = ({ room, players, currentPlayer, onCorrectGuess }: P
     await handleAnswer(questionId, customAnswer.trim());
   };
 
-  const pendingQuestion = questions.find(q => !q.answer && !q.is_guess);
+  // Get all pending questions (not answered and not guesses)
+  const pendingQuestions = questions.filter(q => !q.answer && !q.is_guess);
   const getPlayerName = (playerId: string) => players.find(p => p.id === playerId)?.name || 'Jogador';
+
+  // Check if current player can ask (not chooser and has questions left)
+  const canAsk = !isChooser && currentPlayer.questions_left > 0;
+  const canGuess = !isChooser && currentPlayer.guesses_left > 0;
 
   return (
     <Card className="w-full max-w-2xl">
@@ -266,10 +250,11 @@ export const PlayingPhase = ({ room, players, currentPlayer, onCorrectGuess }: P
             {players.map(p => (
               <Badge 
                 key={p.id} 
-                variant={p.id === currentTurnPlayer?.id ? 'default' : 'outline'}
+                variant={p.id === chooser?.id ? 'secondary' : 'outline'}
                 className="text-xs"
               >
                 {p.name}: {p.score}pts
+                {p.id === chooser?.id && ' 👑'}
               </Badge>
             ))}
           </div>
@@ -302,19 +287,23 @@ export const PlayingPhase = ({ room, players, currentPlayer, onCorrectGuess }: P
                 {showTeam ? 'Esconder' : 'Mostrar'}
               </Button>
             </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              Você é o escolhedor! Responda as perguntas dos outros jogadores.
+            </p>
           </div>
         )}
 
-        {/* Current Turn Info */}
-        <div className="text-center p-2 sm:p-3 bg-muted rounded-lg">
-          {pendingQuestion && isChooser ? (
-            <p className="text-sm sm:text-base">Responda a pergunta de <strong>{getPlayerName(pendingQuestion.player_id)}</strong></p>
-          ) : isMyTurn ? (
-            <p className="font-bold text-primary text-sm sm:text-base">É sua vez de perguntar ou chutar!</p>
-          ) : (
-            <p className="text-sm sm:text-base">Vez de <strong>{currentTurnPlayer?.name}</strong></p>
-          )}
-        </div>
+        {/* Info for non-choosers */}
+        {!isChooser && (
+          <div className="text-center p-2 sm:p-3 bg-muted rounded-lg">
+            <p className="text-sm sm:text-base font-medium text-primary">
+              Faça perguntas ou tente adivinhar o time!
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Perguntas: {currentPlayer.questions_left} | Chutes: {currentPlayer.guesses_left}
+            </p>
+          </div>
+        )}
 
         {/* Questions History */}
         <ScrollArea className="h-40 sm:h-48 border rounded-lg p-2 sm:p-3">
@@ -325,7 +314,7 @@ export const PlayingPhase = ({ room, players, currentPlayer, onCorrectGuess }: P
               {questions.map((q) => (
                 <div 
                   key={q.id} 
-                  className={`p-2 rounded ${q.is_guess ? 'bg-yellow-100 dark:bg-yellow-900/30' : 'bg-muted'}`}
+                  className={`p-2 rounded ${q.is_guess ? 'bg-yellow-100 dark:bg-yellow-900/30' : q.answer ? 'bg-muted' : 'bg-blue-100 dark:bg-blue-900/30'}`}
                 >
                   <div className="flex items-start gap-2">
                     {q.is_guess ? (
@@ -348,6 +337,11 @@ export const PlayingPhase = ({ room, players, currentPlayer, onCorrectGuess }: P
                           {q.answer}
                         </Badge>
                       )}
+                      {!q.answer && !q.is_guess && (
+                        <Badge variant="outline" className="mt-1 text-xs animate-pulse">
+                          Aguardando resposta...
+                        </Badge>
+                      )}
                       {q.is_correct !== null && (
                         <Badge variant={q.is_correct ? 'default' : 'destructive'} className="mt-1 text-xs">
                           {q.is_correct ? '✓ Correto!' : '✗ Errado'}
@@ -361,41 +355,51 @@ export const PlayingPhase = ({ room, players, currentPlayer, onCorrectGuess }: P
           )}
         </ScrollArea>
 
-        {/* Answer Buttons for Chooser */}
-        {isChooser && pendingQuestion && (
-          <div className="space-y-3">
-            <div className="flex flex-wrap gap-2 justify-center">
-              <Button onClick={() => handleAnswer(pendingQuestion.id, 'Sim')} disabled={loading} size="sm">
-                Sim
-              </Button>
-              <Button onClick={() => handleAnswer(pendingQuestion.id, 'Não')} variant="destructive" disabled={loading} size="sm">
-                Não
-              </Button>
-              <Button onClick={() => handleAnswer(pendingQuestion.id, 'Talvez')} variant="secondary" disabled={loading} size="sm">
-                Talvez
-              </Button>
-            </div>
-            <div className="flex gap-2">
-              <Input
-                value={customAnswer}
-                onChange={(e) => setCustomAnswer(e.target.value)}
-                placeholder="Ou digite uma resposta personalizada..."
-                onKeyDown={(e) => e.key === 'Enter' && handleCustomAnswer(pendingQuestion.id)}
-                maxLength={100}
-              />
-              <Button 
-                onClick={() => handleCustomAnswer(pendingQuestion.id)} 
-                disabled={loading || !customAnswer.trim()}
-                size="icon"
-              >
-                <Send className="w-4 h-4" />
-              </Button>
-            </div>
+        {/* Answer Buttons for Chooser - Show all pending questions */}
+        {isChooser && pendingQuestions.length > 0 && (
+          <div className="space-y-4">
+            <p className="text-sm font-medium text-center">
+              {pendingQuestions.length} pergunta(s) aguardando resposta:
+            </p>
+            {pendingQuestions.map((pendingQuestion) => (
+              <div key={pendingQuestion.id} className="p-3 border rounded-lg space-y-2 bg-blue-50 dark:bg-blue-900/20">
+                <p className="text-sm">
+                  <strong>{getPlayerName(pendingQuestion.player_id)}:</strong> {pendingQuestion.question}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <Button onClick={() => handleAnswer(pendingQuestion.id, 'Sim')} disabled={loading} size="sm">
+                    Sim
+                  </Button>
+                  <Button onClick={() => handleAnswer(pendingQuestion.id, 'Não')} variant="destructive" disabled={loading} size="sm">
+                    Não
+                  </Button>
+                  <Button onClick={() => handleAnswer(pendingQuestion.id, 'Talvez')} variant="secondary" disabled={loading} size="sm">
+                    Talvez
+                  </Button>
+                </div>
+                <div className="flex gap-2">
+                  <Input
+                    value={customAnswer}
+                    onChange={(e) => setCustomAnswer(e.target.value)}
+                    placeholder="Resposta personalizada..."
+                    onKeyDown={(e) => e.key === 'Enter' && handleCustomAnswer(pendingQuestion.id)}
+                    maxLength={100}
+                  />
+                  <Button 
+                    onClick={() => handleCustomAnswer(pendingQuestion.id)} 
+                    disabled={loading || !customAnswer.trim()}
+                    size="icon"
+                  >
+                    <Send className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            ))}
           </div>
         )}
 
-        {/* Input for current turn player */}
-        {isMyTurn && !pendingQuestion && (
+        {/* Input for any non-chooser player - they can ask anytime */}
+        {!isChooser && (
           <div className="space-y-2 sm:space-y-3">
             <Input
               value={input}
@@ -408,7 +412,7 @@ export const PlayingPhase = ({ room, players, currentPlayer, onCorrectGuess }: P
                 className="flex-1" 
                 variant="outline" 
                 onClick={handleAskQuestion}
-                disabled={loading || currentPlayer.questions_left <= 0}
+                disabled={loading || !canAsk}
                 size="sm"
               >
                 <HelpCircle className="w-4 h-4 mr-1 sm:mr-2" />
@@ -417,7 +421,7 @@ export const PlayingPhase = ({ room, players, currentPlayer, onCorrectGuess }: P
               <Button 
                 className="flex-1" 
                 onClick={handleGuess}
-                disabled={loading || currentPlayer.guesses_left <= 0}
+                disabled={loading || !canGuess}
                 size="sm"
               >
                 <Target className="w-4 h-4 mr-1 sm:mr-2" />
@@ -427,10 +431,10 @@ export const PlayingPhase = ({ room, players, currentPlayer, onCorrectGuess }: P
           </div>
         )}
 
-        {/* Waiting message */}
-        {!isMyTurn && !isChooser && (
+        {/* Chooser waiting message when no pending questions */}
+        {isChooser && pendingQuestions.length === 0 && (
           <p className="text-center text-muted-foreground text-sm">
-            Aguarde sua vez...
+            Aguardando perguntas dos jogadores...
           </p>
         )}
       </CardContent>
