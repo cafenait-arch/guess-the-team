@@ -272,12 +272,14 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          correct_guesses: number
           created_at: string
           game_account_id: string | null
           games_played: number
           games_won: number
           id: string
           level: number
+          total_guesses: number
           total_score: number
           updated_at: string
           user_id: string | null
@@ -286,12 +288,14 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          correct_guesses?: number
           created_at?: string
           game_account_id?: string | null
           games_played?: number
           games_won?: number
           id?: string
           level?: number
+          total_guesses?: number
           total_score?: number
           updated_at?: string
           user_id?: string | null
@@ -300,12 +304,14 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          correct_guesses?: number
           created_at?: string
           game_account_id?: string | null
           games_played?: number
           games_won?: number
           id?: string
           level?: number
+          total_guesses?: number
           total_score?: number
           updated_at?: string
           user_id?: string | null

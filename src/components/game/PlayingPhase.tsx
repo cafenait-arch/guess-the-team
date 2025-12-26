@@ -197,6 +197,25 @@ export const PlayingPhase = ({ room, players, currentPlayer, onCorrectGuess, isH
         .update({ guesses_left: currentPlayer.guesses_left - 1 })
         .eq('id', currentPlayer.id);
 
+      // Update player's guess statistics in profile
+      if (currentPlayer.user_id) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('correct_guesses, total_guesses')
+          .eq('game_account_id', currentPlayer.user_id)
+          .maybeSingle();
+        
+        if (profile) {
+          await supabase
+            .from('profiles')
+            .update({
+              correct_guesses: (profile.correct_guesses || 0) + (isCorrect ? 1 : 0),
+              total_guesses: (profile.total_guesses || 0) + 1
+            })
+            .eq('game_account_id', currentPlayer.user_id);
+        }
+      }
+
       if (isCorrect) {
         await supabase
           .from('game_players')

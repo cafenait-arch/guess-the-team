@@ -17,6 +17,8 @@ export interface UserProfile {
   games_played: number;
   games_won: number;
   total_score: number;
+  correct_guesses: number;
+  total_guesses: number;
   created_at: string;
   updated_at: string;
   game_account_id: string | null;
