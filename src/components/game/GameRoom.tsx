@@ -65,10 +65,10 @@ export const GameRoom = ({ roomId, playerId, sessionId, onLeave, userId }: GameR
   const updateStats = useCallback(async (isWinner: boolean, score: number) => {
     if (!account) return;
     
+    // Only update games_won and total_score here (games_played is incremented at game start)
     await supabase
       .from('profiles')
       .update({
-        games_played: (profile?.games_played || 0) + 1,
         games_won: (profile?.games_won || 0) + (isWinner ? 1 : 0),
         total_score: (profile?.total_score || 0) + score,
       })
@@ -229,7 +229,36 @@ export const GameRoom = ({ roomId, playerId, sessionId, onLeave, userId }: GameR
       )}
 
       {room.status === 'game_over' && (
-        <GameOver players={players} onPlayAgain={onLeave} currentPlayerId={playerId} />
+        <GameOver 
+          players={players} 
+          onPlayAgain={async () => {
+            // Reset room to waiting status for lobby
+            await supabase
+              .from('game_rooms')
+              .update({ 
+                status: 'waiting',
+                current_round: 0,
+                current_chooser_index: 0,
+                current_turn_index: 0,
+                current_team: null
+              })
+              .eq('id', roomId);
+            
+            // Reset all players' guesses and questions
+            await supabase
+              .from('game_players')
+              .update({
+                score: 0,
+                guesses_left: room.max_guesses,
+                questions_left: room.max_questions
+              })
+              .eq('room_id', roomId);
+            
+            // Reset XP awarded flag for next game
+            xpAwarded.current = false;
+          }} 
+          currentPlayerId={playerId} 
+        />
       )}
     </div>
   );
