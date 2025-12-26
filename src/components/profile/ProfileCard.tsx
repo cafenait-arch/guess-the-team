@@ -7,7 +7,7 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { useAuth, getXpProgress, UserProfile } from '@/hooks/useAuth';
+import { useGameAuth, getXpProgress, UserProfile } from '@/hooks/useGameAuth';
 import { useToast } from '@/hooks/use-toast';
 import { Settings, Star, Trophy } from 'lucide-react';
 
@@ -17,7 +17,7 @@ interface ProfileCardProps {
 }
 
 export const ProfileCard = ({ profile, compact = false }: ProfileCardProps) => {
-  const { updateProfile } = useAuth();
+  const { updateProfile } = useGameAuth();
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const [username, setUsername] = useState(profile.username || '');

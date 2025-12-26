@@ -3,18 +3,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CreateRoom } from '@/components/game/CreateRoom';
 import { JoinRoom } from '@/components/game/JoinRoom';
 import { GameRoom } from '@/components/game/GameRoom';
-import { AuthPage } from '@/components/auth/AuthPage';
+import { GameAuthPage } from '@/components/auth/GameAuthPage';
 import { ProfileCard } from '@/components/profile/ProfileCard';
 import { ProfileBadge } from '@/components/profile/ProfileBadge';
 import { SoundToggle } from '@/components/SoundToggle';
 import { useGameSession } from '@/hooks/useGameSession';
-import { useAuth } from '@/hooks/useAuth';
+import { useGameAuth } from '@/hooks/useGameAuth';
 import { LogOut, User } from 'lucide-react';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 
 const Index = () => {
   const { sessionId, roomId, playerId, isLoading: sessionLoading, setRoom, clearRoom } = useGameSession();
-  const { user, profile, loading: authLoading, signOut } = useAuth();
+  const { account, profile, loading: authLoading, logout, isLoggedIn } = useGameAuth();
 
   const handleRoomCreated = (newRoomId: string, newPlayerId: string) => {
     setRoom(newRoomId, newPlayerId);
@@ -28,8 +28,8 @@ const Index = () => {
     clearRoom();
   };
 
-  const handleSignOut = async () => {
-    await signOut();
+  const handleLogout = () => {
+    logout();
     clearRoom();
   };
 
@@ -43,8 +43,8 @@ const Index = () => {
   }
 
   // Show auth page if not logged in
-  if (!user) {
-    return <AuthPage />;
+  if (!isLoggedIn || !account) {
+    return <GameAuthPage />;
   }
 
   // Show loading while checking session
@@ -95,7 +95,7 @@ const Index = () => {
             playerId={playerId} 
             sessionId={sessionId}
             onLeave={handleLeave}
-            userId={user.id}
+            userId={account.id}
           />
         </div>
       </div>
@@ -119,7 +119,7 @@ const Index = () => {
             </DialogContent>
           </Dialog>
         )}
-        <Button variant="ghost" size="icon" onClick={handleSignOut}>
+        <Button variant="ghost" size="icon" onClick={handleLogout}>
           <LogOut className="w-5 h-5 text-white" />
         </Button>
       </div>
@@ -138,16 +138,16 @@ const Index = () => {
           <JoinRoom 
             sessionId={sessionId} 
             onRoomJoined={handleRoomJoined}
-            userId={user.id}
-            displayName={profile?.username || user.email?.split('@')[0] || 'Jogador'}
+            userId={account.id}
+            displayName={profile?.username || account.username}
           />
         </TabsContent>
         <TabsContent value="create">
           <CreateRoom 
             sessionId={sessionId} 
             onRoomCreated={handleRoomCreated}
-            userId={user.id}
-            displayName={profile?.username || user.email?.split('@')[0] || 'Jogador'}
+            userId={account.id}
+            displayName={profile?.username || account.username}
           />
         </TabsContent>
       </Tabs>
