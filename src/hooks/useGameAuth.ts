@@ -154,12 +154,14 @@ export const useGameAuth = () => {
     }
 
     // Create profile
-    const { error: profileError } = await supabase
+    const { data: newProfile, error: profileError } = await supabase
       .from('profiles')
       .insert({
         game_account_id: newAccount.id,
         username: username,
-      });
+      })
+      .select()
+      .single();
 
     if (profileError) {
       return { error: profileError };
@@ -172,12 +174,11 @@ export const useGameAuth = () => {
     };
 
     localStorage.setItem(STORAGE_KEY, JSON.stringify(gameAccount));
-    setAccount(gameAccount);
     
-    // Fetch profile and set it directly
-    const profileData = await fetchProfile(newAccount.id);
-    if (profileData) {
-      setProfile(profileData as UserProfile);
+    // Set states immediately for instant UI update
+    setAccount(gameAccount);
+    if (newProfile) {
+      setProfile(newProfile as UserProfile);
     }
 
     return { error: null };
@@ -208,12 +209,14 @@ export const useGameAuth = () => {
     };
 
     localStorage.setItem(STORAGE_KEY, JSON.stringify(gameAccount));
+    
+    // Set account state immediately
     setAccount(gameAccount);
     
-    // Fetch profile and wait for it
-    const profileData = await fetchProfile(data.id);
+    // Fetch profile and set it immediately
+    const profileData = await fetchProfile(data.id, data.username);
     if (profileData) {
-      setProfile(profileData as UserProfile);
+      setProfile(profileData);
     }
 
     return { error: null };
