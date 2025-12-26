@@ -77,19 +77,20 @@ export const useGameAuth = () => {
 
   // Load account from localStorage on mount
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored) as GameAccount;
-        setAccount(parsed);
-        fetchProfile(parsed.id).finally(() => setLoading(false));
-      } catch {
-        localStorage.removeItem(STORAGE_KEY);
-        setLoading(false);
+    const loadAccount = async () => {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored) as GameAccount;
+          setAccount(parsed);
+          await fetchProfile(parsed.id);
+        } catch {
+          localStorage.removeItem(STORAGE_KEY);
+        }
       }
-    } else {
       setLoading(false);
-    }
+    };
+    loadAccount();
   }, [fetchProfile]);
 
   const register = async (username: string, password: string) => {
@@ -137,7 +138,12 @@ export const useGameAuth = () => {
 
     localStorage.setItem(STORAGE_KEY, JSON.stringify(gameAccount));
     setAccount(gameAccount);
-    await fetchProfile(newAccount.id);
+    
+    // Fetch profile and set it directly
+    const profileData = await fetchProfile(newAccount.id);
+    if (profileData) {
+      setProfile(profileData as UserProfile);
+    }
 
     return { error: null };
   };
@@ -168,7 +174,12 @@ export const useGameAuth = () => {
 
     localStorage.setItem(STORAGE_KEY, JSON.stringify(gameAccount));
     setAccount(gameAccount);
-    await fetchProfile(data.id);
+    
+    // Fetch profile and wait for it
+    const profileData = await fetchProfile(data.id);
+    if (profileData) {
+      setProfile(profileData as UserProfile);
+    }
 
     return { error: null };
   };
