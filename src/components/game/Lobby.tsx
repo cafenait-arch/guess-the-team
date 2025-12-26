@@ -128,6 +128,24 @@ export const Lobby = ({ roomId, playerId, sessionId }: LobbyProps) => {
 
     const randomChooserIndex = Math.floor(Math.random() * players.length);
 
+    // Increment games_played for all players with accounts
+    for (const player of players) {
+      if (player.user_id) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('games_played')
+          .eq('game_account_id', player.user_id)
+          .maybeSingle();
+        
+        if (profile) {
+          await supabase
+            .from('profiles')
+            .update({ games_played: (profile.games_played || 0) + 1 })
+            .eq('game_account_id', player.user_id);
+        }
+      }
+    }
+
     await supabase
       .from('game_rooms')
       .update({ 
