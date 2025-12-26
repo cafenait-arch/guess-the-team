@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,25 +11,17 @@ interface JoinRoomProps {
   sessionId: string;
   onRoomJoined: (roomId: string, playerId: string) => void;
   userId?: string;
-  displayName?: string;
+  displayName: string;
 }
 
 export const JoinRoom = ({ sessionId, onRoomJoined, userId, displayName }: JoinRoomProps) => {
-  const [playerName, setPlayerName] = useState('');
   const [roomCode, setRoomCode] = useState('');
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
-  // Set default name from profile
-  useEffect(() => {
-    if (displayName && !playerName) {
-      setPlayerName(displayName);
-    }
-  }, [displayName]);
-
   const handleJoin = async () => {
-    if (!playerName.trim()) {
-      toast({ title: 'Digite seu nome', variant: 'destructive' });
+    if (!displayName) {
+      toast({ title: 'Nome não encontrado', variant: 'destructive' });
       return;
     }
     if (!roomCode.trim()) {
@@ -85,7 +77,7 @@ export const JoinRoom = ({ sessionId, onRoomJoined, userId, displayName }: JoinR
         .from('game_players')
         .insert({
           room_id: room.id,
-          name: playerName.trim(),
+          name: displayName,
           session_id: sessionId,
           guesses_left: room.max_guesses,
           questions_left: room.max_questions,
@@ -115,15 +107,9 @@ export const JoinRoom = ({ sessionId, onRoomJoined, userId, displayName }: JoinR
         <CardTitle className="text-center text-lg sm:text-xl">Entrar em Sala</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="name">Seu Nome</Label>
-          <Input
-            id="name"
-            value={playerName}
-            onChange={(e) => setPlayerName(e.target.value)}
-            placeholder="Digite seu nome"
-            maxLength={50}
-          />
+        <div className="text-center p-3 bg-muted rounded-lg">
+          <p className="text-sm text-muted-foreground">Jogando como:</p>
+          <p className="font-bold text-lg">{displayName}</p>
         </div>
         
         <div className="space-y-2">
