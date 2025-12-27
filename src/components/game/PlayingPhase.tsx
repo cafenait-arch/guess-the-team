@@ -8,7 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { GamePlayer, GameRoom, GameQuestion, isGuessCorrect } from '@/lib/gameUtils';
 import { useToast } from '@/hooks/use-toast';
 import { soundManager } from '@/lib/sounds';
-import { HelpCircle, Target, Eye, Send, StopCircle } from 'lucide-react';
+import { HelpCircle, Target, Eye, Send, StopCircle, Sparkles, Loader2 } from 'lucide-react';
 import { PlayerSidebar } from './PlayerSidebar';
 
 interface PlayerProfile {
@@ -36,6 +36,7 @@ export const PlayingPhase = ({ room, players, currentPlayer, onCorrectGuess, isH
   const [questions, setQuestions] = useState<GameQuestion[]>([]);
   const [loading, setLoading] = useState(false);
   const [showTeam, setShowTeam] = useState(false);
+  const [aiLoading, setAiLoading] = useState<string | null>(null);
   const { toast } = useToast();
 
   const chooser = players[room.current_chooser_index];
@@ -265,6 +266,44 @@ export const PlayingPhase = ({ room, players, currentPlayer, onCorrectGuess, isH
     await handleAnswer(questionId, customAnswer.trim());
   };
 
+  const handleAiAnswer = async (questionId: string, question: string) => {
+    if (!room.current_team) {
+      toast({ title: 'Time não definido', variant: 'destructive' });
+      return;
+    }
+
+    setAiLoading(questionId);
+    try {
+      const { data, error } = await supabase.functions.invoke('ai-answer', {
+        body: { question, team: room.current_team }
+      });
+
+      if (error) {
+        console.error('AI error:', error);
+        toast({ title: 'Erro ao consultar IA', variant: 'destructive' });
+        soundManager.playError();
+        return;
+      }
+
+      if (data?.error) {
+        toast({ title: data.error, variant: 'destructive' });
+        soundManager.playError();
+        return;
+      }
+
+      if (data?.answer) {
+        await handleAnswer(questionId, `🤖 ${data.answer}`);
+        toast({ title: 'IA respondeu!' });
+      }
+    } catch (error) {
+      console.error('Error calling AI:', error);
+      toast({ title: 'Erro ao consultar IA', variant: 'destructive' });
+      soundManager.playError();
+    } finally {
+      setAiLoading(null);
+    }
+  };
+
   // Get all pending questions (not answered and not guesses)
   const pendingQuestions = questions.filter(q => !q.answer && !q.is_guess);
   const getPlayerName = (playerId: string) => {
@@ -419,14 +458,28 @@ export const PlayingPhase = ({ room, players, currentPlayer, onCorrectGuess, isH
                     <strong>{getPlayerName(pendingQuestion.player_id)}:</strong> {pendingQuestion.question}
                   </p>
                   <div className="flex flex-wrap gap-2">
-                    <Button onClick={() => handleAnswer(pendingQuestion.id, 'Sim')} disabled={loading} size="sm">
+                    <Button onClick={() => handleAnswer(pendingQuestion.id, 'Sim')} disabled={loading || aiLoading === pendingQuestion.id} size="sm">
                       Sim
                     </Button>
-                    <Button onClick={() => handleAnswer(pendingQuestion.id, 'Não')} variant="destructive" disabled={loading} size="sm">
+                    <Button onClick={() => handleAnswer(pendingQuestion.id, 'Não')} variant="destructive" disabled={loading || aiLoading === pendingQuestion.id} size="sm">
                       Não
                     </Button>
-                    <Button onClick={() => handleAnswer(pendingQuestion.id, 'Talvez')} variant="secondary" disabled={loading} size="sm">
+                    <Button onClick={() => handleAnswer(pendingQuestion.id, 'Talvez')} variant="secondary" disabled={loading || aiLoading === pendingQuestion.id} size="sm">
                       Talvez
+                    </Button>
+                    <Button 
+                      onClick={() => handleAiAnswer(pendingQuestion.id, pendingQuestion.question)} 
+                      disabled={loading || aiLoading === pendingQuestion.id}
+                      variant="outline"
+                      size="sm"
+                      className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 border-purple-300 dark:border-purple-700 hover:from-purple-500/20 hover:to-pink-500/20"
+                    >
+                      {aiLoading === pendingQuestion.id ? (
+                        <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                      ) : (
+                        <Sparkles className="w-4 h-4 mr-1 text-purple-500" />
+                      )}
+                      IA
                     </Button>
                   </div>
                   <div className="flex gap-2">
